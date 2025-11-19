@@ -1,0 +1,54 @@
+{
+  "project_info": {
+    "project_number": "1074718473442",
+    "project_id": "zentask-8677d",
+    "storage_bucket": "zentask-8677d.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1074718473442:android:c07193cd1d2f4e8e11f2bb",
+        "android_client_info": {
+          "package_name": "com.example.zentask"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1074718473442-93e1iljap4t3ucjaglmajl4k4tbbt90a.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.zentask",
+            "certificate_hash": "b3259498ed71e841bac34b3d4287933e0384bff8"
+          }
+        },
+        {
+          "client_id": "1074718473442-26uoutidb7fhh7evq4k7397i1q6cs7b9.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAOw_9jaIY1X198p3LGvKGbeDa9IMR-tn4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1074718473442-26uoutidb7fhh7evq4k7397i1q6cs7b9.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "1074718473442-9f22egcktc8925k6rdg9v80s84omghth.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.zentask"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
