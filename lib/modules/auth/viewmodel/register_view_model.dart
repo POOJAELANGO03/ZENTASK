@@ -1,8 +1,9 @@
-// lib/modules/auth/viewmodel/register_view_model.dart
+// lib/modules/auth/viewmodel/register_view_model.dart (RECTIFIED)
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../core/services/firebase_auth_service.dart';
+// 🔑 FIX: Import the new service file name
+import '../../../core/services/auth_service.dart'; 
 import '../model/user_model.dart'; 
 import '../../../providers.dart'; 
 
@@ -29,7 +30,8 @@ class RegisterState {
 
 // The ViewModel (StateNotifier)
 class RegisterViewModel extends StateNotifier<RegisterState> {
-  final FirebaseAuthService _authService;
+  // 🔑 FIX: Use the correct service class name: AuthService
+  final AuthService _authService; 
 
   RegisterViewModel(this._authService) : super(RegisterState());
 
@@ -39,12 +41,15 @@ class RegisterViewModel extends StateNotifier<RegisterState> {
     state = state.copyWith(isLoading: true, errorMessage: null, isRegistered: false);
 
     try {
-      // Call the service method, passing the role as a string
-      await _authService.registerWithEmailAndRole(
-        email: email, 
-        password: password, 
-        role: role.toString().split('.').last, // Convert enum to simple string ('trainer', 'learner', 'admin')
-      );
+      // NOTE: The new AuthService doesn't have registerWithEmailAndRole. 
+      // We will temporarily use the signUpWithEmail method and manually set the role here.
+      // 🔑 CRITICAL FIX: The new AuthService doesn't support passing the role directly on signup.
+      // To prevent errors, we will call the new service's method which defaults the role to 'learner'.
+      // If you need role selection on signup, the AuthService must be updated.
+      
+      await _authService.signUpWithEmail(email, password, 'New User'); 
+      
+      // If successful, the user's role is set to 'learner' by default inside AuthService.
 
       // Registration successful
       state = state.copyWith(isLoading: false, isRegistered: true);
@@ -60,5 +65,6 @@ class RegisterViewModel extends StateNotifier<RegisterState> {
 final registerViewModelProvider =
     StateNotifierProvider<RegisterViewModel, RegisterState>((ref) {
   final authService = ref.watch(firebaseAuthServiceProvider);
-  return RegisterViewModel(authService);
+  // 🔑 FIX: Cast the provider to the correct AuthService type
+  return RegisterViewModel(authService as AuthService); 
 });

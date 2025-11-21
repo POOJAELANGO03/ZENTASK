@@ -1,9 +1,11 @@
-// lib/providers.dart
+// lib/providers.dart (ALTERED)
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'core/services/firebase_auth_service.dart';
+// 🔑 FIX: Import the new service file name
+import 'core/services/auth_service.dart'; 
 
 // The authentication service provider
-final firebaseAuthServiceProvider = Provider((ref) => FirebaseAuthService());
+// 🔑 FIX: Reference the new AuthService class
+final firebaseAuthServiceProvider = Provider((ref) => AuthService()); 
 
 // You can add other global service providers here (e.g., TaskService, etc.)

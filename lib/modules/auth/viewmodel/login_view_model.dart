@@ -1,15 +1,16 @@
-// lib/modules/auth/viewmodel/login_view_model.dart
+// lib/modules/auth/viewmodel/login_view_model.dart (ALTERED)
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../core/services/firebase_auth_service.dart';
-// 🔑 FIX 1: Import the central providers file
+// 🔑 FIX: Import the new service file (now named auth_service)
+import '../../../core/services/auth_service.dart'; 
 import '../../../providers.dart'; 
 
 // The State (Data) for the Login Screen
 class LoginState {
   final bool isLoading;
   final String? errorMessage;
+  // NOTE: isAuthenticated state is handled by the main app routing (authStateViewModelProvider)
 
   LoginState({this.isLoading = false, this.errorMessage});
 
@@ -17,33 +18,57 @@ class LoginState {
     bool? isLoading,
     String? errorMessage,
   }) {
+    // Note: errorMessage is explicitly set to null unless passed a string
     return LoginState(
       isLoading: isLoading ?? this.isLoading,
-      errorMessage: errorMessage,
+      errorMessage: errorMessage, 
     );
   }
 }
 
 // The ViewModel (StateNotifier)
 class LoginViewModel extends StateNotifier<LoginState> {
-  final FirebaseAuthService _authService;
+  // 🔑 FIX: Use the new AuthService class name
+  final AuthService _authService; 
 
   LoginViewModel(this._authService) : super(LoginState());
 
+  // 1. Email/Password Sign-In
   Future<void> signIn(String email, String password) async {
     state = state.copyWith(isLoading: true, errorMessage: null);
 
     try {
-      // 🔑 FIX 2: Use named arguments (required by the service method signature)
-      await _authService.signInWithEmailAndPassword(
-        email: email, 
-        password: password
-      );
+      final user = await _authService.signInWithEmail(email, password);
+      
+      // If user is null, sign-in failed (e.g., invalid credentials)
+      if (user == null) {
+         state = state.copyWith(isLoading: false, errorMessage: 'Invalid email or password. Please try again.');
+         return;
+      }
 
       state = state.copyWith(isLoading: false);
+      // Navigation is handled by AuthStateViewModel
     } catch (e) {
       debugPrint('Login Error: $e');
       state = state.copyWith(isLoading: false, errorMessage: e.toString());
+    }
+  }
+  
+  // 2. Google Sign-In
+  Future<void> signInWithGoogle() async {
+    state = state.copyWith(isLoading: true, errorMessage: null);
+
+    try {
+      await _authService.signInWithGoogle(); 
+      
+      // If sign-in is successful (user is not null or cancelled), 
+      // the AuthStateViewModel handles the navigation.
+
+      state = state.copyWith(isLoading: false);
+    } catch (e) {
+      debugPrint('Google Sign-In Error: $e');
+      // Use the friendly message from the GoogleSignInException
+      state = state.copyWith(isLoading: false, errorMessage: e.toString()); 
     }
   }
 }
@@ -51,7 +76,7 @@ class LoginViewModel extends StateNotifier<LoginState> {
 // The Riverpod Provider to expose the ViewModel
 final loginViewModelProvider =
     StateNotifierProvider<LoginViewModel, LoginState>((ref) {
-  // 🔑 FIX 3: Correctly watch the imported provider
   final authService = ref.watch(firebaseAuthServiceProvider);
-  return LoginViewModel(authService);
+  // 🔑 FIX: ViewModel now uses AuthService instance
+  return LoginViewModel(authService as AuthService); 
 });

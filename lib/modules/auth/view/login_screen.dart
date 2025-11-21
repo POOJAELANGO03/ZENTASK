@@ -1,117 +1,237 @@
-// lib/modules/auth/view/login_screen.dart
+// lib/modules/auth/view/login_screen.dart (ALTERED - Pure White Background)
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../viewmodel/login_view_model.dart';
-import 'register_screen.dart';
+import 'role_selection_screen.dart'; 
 
+
+// Converted from StatefulWidget to a stateless ConsumerWidget
 class LoginScreen extends ConsumerWidget {
   LoginScreen({super.key});
 
-  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController(); 
   final TextEditingController _passwordController = TextEditingController();
+
+  // Local state for password visibility (must be managed using local state)
+  final StateProvider<bool> isPasswordVisibleProvider = StateProvider<bool>((ref) => false);
+
+  void _login(WidgetRef ref) {
+    FocusScope.of(ref.context).unfocus();
+    
+    ref.read(loginViewModelProvider.notifier).signIn(
+      _emailController.text.trim(),
+      _passwordController.text.trim(),
+    );
+  }
+
+  void _signInWithGoogle(WidgetRef ref) {
+    FocusScope.of(ref.context).unfocus();
+    
+    ref.read(loginViewModelProvider.notifier).signInWithGoogle();
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(loginViewModelProvider);
-    final viewModel = ref.read(loginViewModelProvider.notifier);
-    final theme = Theme.of(context);
+    final isPasswordVisible = ref.watch(isPasswordVisibleProvider);
+    final isPasswordVisibleNotifier = ref.read(isPasswordVisibleProvider.notifier);
 
-    // Error listener
-    ref.listen<LoginState>(loginViewModelProvider, (previous, current) {
-      if (current.errorMessage != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(current.errorMessage!),
-            backgroundColor: theme.colorScheme.error,
-          ),
-        );
-      }
-    });
 
     return Scaffold(
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(32.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                'Welcome Back',
-                style: theme.textTheme.headlineLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: theme.primaryColor,
+      backgroundColor: Colors.white, // 🔑 PURE WHITE BACKGROUND
+      body: SingleChildScrollView(
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SizedBox(height: MediaQuery.of(context).size.height * 0.1),
+                const Text(
+                  "WELCOME TO COURSEHIVE!",
+                  style: TextStyle(
+                    fontSize: 32,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
+                  ),
                 ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Sign in to continue',
-                style: theme.textTheme.titleMedium,
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 48),
-
-              // Email Field
-              TextFormField(
-                controller: _emailController,
-                decoration: const InputDecoration(
-                  labelText: 'Email Address',
-                  prefixIcon: Icon(Icons.email_outlined),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
+                const SizedBox(height: 40),
+                _buildTextField(
+                  controller: _emailController,
+                  hintText: 'Enter your email',
+                  obscureText: false, 
                 ),
-                keyboardType: TextInputType.emailAddress,
-              ),
-              const SizedBox(height: 16),
-
-              // Password Field
-              TextFormField(
-                controller: _passwordController,
-                decoration: const InputDecoration(
-                  labelText: 'Password',
-                  prefixIcon: Icon(Icons.lock_outline),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
+                const SizedBox(height: 16),
+                _buildTextField(
+                  controller: _passwordController,
+                  hintText: 'Enter your password',
+                  obscureText: !isPasswordVisible, 
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      isPasswordVisible
+                          ? Icons.visibility
+                          : Icons.visibility_off,
+                      color: Colors.grey,
+                    ),
+                    onPressed: () {
+                      isPasswordVisibleNotifier.state = !isPasswordVisible;
+                    },
+                  ),
                 ),
-                obscureText: true,
-              ),
-              const SizedBox(height: 32),
-
-              // Login Button
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  minimumSize: const Size(double.infinity, 50),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                const SizedBox(height: 12),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton(
+                    onPressed: () {
+                      // TODO: Implement Forgot Password functionality
+                    },
+                    child: const Text(
+                      'Forgot Password?',
+                      style: TextStyle(color: Colors.black),
+                    ),
+                  ),
                 ),
-                onPressed: state.isLoading
-                    ? null
-                    : () {
-                        viewModel.signIn(
-                          _emailController.text.trim(),
-                          _passwordController.text.trim(),
-                        );
-                      },
-                child: state.isLoading
-                    ? const SizedBox(
-                        width: 20, height: 20,
-                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                    : const Text('Login', style: TextStyle(fontSize: 18)),
-              ),
-              const SizedBox(height: 20),
-
-              // Register Link
-              TextButton(
-                onPressed: () {
-                  // Navigate to RegisterScreen
-                  Navigator.of(context).push(MaterialPageRoute(builder: (_) => RegisterScreen()));
-                },
-                child: const Text("Don't have an account? Register Here",
-                  style: TextStyle(fontWeight: FontWeight.bold)),
-              ),
-            ],
+                const SizedBox(height: 20),
+                
+                if (state.errorMessage != null)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 16.0),
+                    child: Center(
+                      child: Text(
+                        state.errorMessage!,
+                        style: const TextStyle(
+                          color: Colors.red,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ),
+                
+                if (state.isLoading)
+                  const Center(child: CircularProgressIndicator())
+                else
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () => _login(ref), 
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.black, // PURE BLACK BUTTON
+                        padding: const EdgeInsets.symmetric(vertical: 18),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text(
+                        'Login',
+                        style: TextStyle(fontSize: 16, color: Colors.white),
+                      ),
+                    ),
+                  ),
+                const SizedBox(height: 30),
+                
+                _buildSocialLoginSection(ref, state.isLoading),
+                
+                const SizedBox(height: 30),
+                _buildBottomNavigation(context),
+                const SizedBox(height: 20),
+              ],
+            ),
           ),
         ),
       ),
+    );
+  }
+
+  // --- UI Builder Methods ---
+
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String hintText,
+    bool obscureText = false,
+    Widget? suffixIcon,
+  }) {
+    return TextField(
+      controller: controller,
+      obscureText: obscureText,
+      decoration: InputDecoration(
+        hintText: hintText,
+        filled: true,
+        fillColor: Colors.white,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
+        ),
+        contentPadding: const EdgeInsets.symmetric(
+          vertical: 18,
+          horizontal: 20,
+        ),
+        suffixIcon: suffixIcon,
+      ),
+    );
+  }
+
+  Widget _buildSocialLoginSection(WidgetRef ref, bool isLoading) {
+    return Column(
+      children: [
+        const Row(
+          children: [
+            Expanded(child: Divider()),
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: 8.0),
+              child: Text(
+                'Or Login with',
+                style: TextStyle(color: Colors.grey),
+              ),
+            ),
+            Expanded(child: Divider()),
+          ],
+        ),
+        const SizedBox(height: 20),
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton.icon(
+            onPressed: isLoading ? null : () => _signInWithGoogle(ref), 
+            icon: Image.asset('assets/images/google_signlogo.png', height: 22.0),
+            label: const Text('Sign in with Google'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.white,
+              foregroundColor: Colors.black,
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+                side: BorderSide(color: Colors.grey.shade300),
+              ),
+              elevation: 0,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBottomNavigation(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        const Text("Don't have an account?"),
+        TextButton(
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const RoleSelectionScreen()), 
+            );
+          },
+          child: const Text(
+            'Register Now',
+            style: TextStyle(
+              color: Color(0xFF2962FF), // Keeping primary color for the link
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

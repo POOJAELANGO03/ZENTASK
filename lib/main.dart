@@ -1,19 +1,14 @@
-// lib/main.dart
+
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:firebase_auth/firebase_auth.dart'; // Import Firebase User type
 
 import 'modules/auth/view/login_screen.dart';
 import 'firebase_options.dart';
 import 'providers.dart';
 import 'modules/auth/model/user_model.dart'; 
 import 'modules/auth/viewmodel/auth_state_view_model.dart'; 
-// Placeholder imports for role-based dashboards (replace with your actual paths later)
-// import 'modules/learner/view/learner_dashboard.dart'; 
-// import 'modules/trainer/view/trainer_dashboard.dart';
-// import 'modules/admin/view/admin_dashboard.dart';
 
 
 void main() async {
@@ -36,7 +31,6 @@ class MyApp extends ConsumerWidget {
       title: 'Coursehive',
       theme: ThemeData(
         primarySwatch: Colors.blue,
-        // Define common input decoration theme here
         inputDecorationTheme: const InputDecorationTheme(
           border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
         ),
@@ -46,26 +40,28 @@ class MyApp extends ConsumerWidget {
       home: authData.when(
         data: (UserModel? userModel) {
           if (userModel != null) {
-            // User is logged in and role is determined
+            // User is logged in and role is determined: route to dashboard
             return _buildRoleBasedScreen(userModel.role, ref); 
           }
-          // User is NOT logged in
+          // User is NOT logged in: route to Login Screen
           return LoginScreen();
         },
+        // Reverting to showing a simple loading indicator during the initial check
         loading: () => const Scaffold(
           body: Center(child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(Colors.blue))),
         ),
+        // On error, show a loading indicator or route directly to login
         error: (err, stack) => Scaffold(
-          appBar: AppBar(title: const Text('Error')),
-          body: Center(child: Text('An error occurred: $err')),
+          appBar: AppBar(title: const Text('Loading Error')),
+          body: Center(child: Text('Initial check failed: $err')),
         ),
       ),
     );
   }
 
-  // Function to return the correct screen based on the UserRole
+  // Function to return the correct screen based on the UserRole (Unchanged)
   Widget _buildRoleBasedScreen(UserRole role, WidgetRef ref) {
-    // You will replace these Placeholder widgets with your actual Dashboard screens.
+    // These are temporary placeholder screens
     switch (role) {
       case UserRole.trainer: 
         return Scaffold(
@@ -81,7 +77,6 @@ class MyApp extends ConsumerWidget {
                 body: Center(child: _buildRoleView(role, ref)));
       case UserRole.unknown:
       default:
-        // Fallback or error screen
         return LoginScreen();
     }
   }
@@ -90,11 +85,10 @@ class MyApp extends ConsumerWidget {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Text('Logged in as: ${role.toString().split('.').last.toUpperCase()}'),
+        Text('Logged in as: ${role.toString().split('.').last.toUpperCase()}', style: const TextStyle(fontSize: 20)),
         const SizedBox(height: 20),
         ElevatedButton(
           onPressed: () {
-            // Call the signOut method from the service
             ref.read(firebaseAuthServiceProvider).signOut();
           },
           child: const Text('Logout'),
