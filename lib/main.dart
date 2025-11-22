@@ -36,7 +36,7 @@ class MyApp extends ConsumerWidget {
     return MaterialApp(
       title: 'Coursehive',
       theme: ThemeData(
-        primarySwatch: Colors.blue,
+        primarySwatch: Colors.blue,fontFamily: 'LibertinusSans',
         inputDecorationTheme: const InputDecorationTheme(
           border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
         ),
