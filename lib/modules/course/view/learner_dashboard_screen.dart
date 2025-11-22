@@ -1,31 +1,37 @@
-// lib/modules/course/view/learner_dashboard_screen.dart (FULL ALTERED CODE - Step 2 & 5 Implementation)
+
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../providers.dart';
 import '../../auth/viewmodel/auth_state_view_model.dart';
 import '../viewmodel/learner_course_viewmodel.dart';
-import '../model/course_model.dart'; 
-import 'course_detail_screen.dart'; 
-import 'video_player_screen.dart'; // 🔑 Required for the play button to work
+import '../model/course_model.dart';
+import 'course_detail_screen.dart';
+import 'video_player_screen.dart';
+import '../viewmodel/progress_provider.dart';
+import '../viewmodel/enrollment_provider.dart';
+import '../model/video_lesson_model.dart';
 
-// --- 1. Dashboard Wrapper (Stateful for Navigation) ---
+// ===============================================================
+// 1. WRAPPER DASHBOARD WITH BOTTOM NAVIGATION
+// ===============================================================
 
 class LearnerDashboardScreen extends ConsumerStatefulWidget {
   const LearnerDashboardScreen({super.key});
 
   @override
-  ConsumerState<LearnerDashboardScreen> createState() => _LearnerDashboardScreenState();
+  ConsumerState<LearnerDashboardScreen> createState() =>
+      _LearnerDashboardScreenState();
 }
 
-class _LearnerDashboardScreenState extends ConsumerState<LearnerDashboardScreen> {
+class _LearnerDashboardScreenState
+    extends ConsumerState<LearnerDashboardScreen> {
   int _currentIndex = 0;
   final TextEditingController _searchController = TextEditingController();
 
-  // List of screens for the Bottom Navigation Bar
   final List<Widget> _screens = [
-    const LearnerCourseExplorerView(), // Explore Courses (Step 2)
-    const LearnerEnrolledCoursesView(), // Active/Completed Courses (Step 5)
+    const LearnerCourseExplorerView(),
+    const LearnerEnrolledCoursesView(),
   ];
 
   @override
@@ -33,41 +39,35 @@ class _LearnerDashboardScreenState extends ConsumerState<LearnerDashboardScreen>
     super.initState();
     _searchController.addListener(_onSearchChanged);
   }
-  
+
   void _onSearchChanged() {
     ref.read(learnerCourseViewModelProvider.notifier).applyFilter(
-      search: _searchController.text.trim(),
-    );
+          search: _searchController.text.trim(),
+        );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      
-      body: _screens[_currentIndex], // Display the current screen
-      
+
+      body: _screens[_currentIndex],
+
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
-        onTap: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
-        },
-        // B&W THEME SETTINGS
-        backgroundColor: Colors.white, 
-        selectedItemColor: Colors.black, 
-        unselectedItemColor: Colors.grey.shade600, 
-        type: BottomNavigationBarType.fixed, 
-        elevation: 5,
+        onTap: (i) => setState(() => _currentIndex = i),
+        backgroundColor: Colors.white,
+        selectedItemColor: Colors.black,
+        unselectedItemColor: Colors.grey.shade600,
+        type: BottomNavigationBarType.fixed,
         items: const [
           BottomNavigationBarItem(
-            icon: Icon(Icons.explore_outlined), 
-            label: 'Explore',
+            icon: Icon(Icons.explore_outlined),
+            label: "Explore",
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.library_books_outlined), 
-            label: 'My Courses',
+            icon: Icon(Icons.library_books_outlined),
+            label: "My Courses",
           ),
         ],
       ),
@@ -76,138 +76,128 @@ class _LearnerDashboardScreenState extends ConsumerState<LearnerDashboardScreen>
 
   @override
   void dispose() {
-    _searchController.removeListener(_onSearchChanged);
     _searchController.dispose();
     super.dispose();
   }
 }
 
-// --- 2. Learner Explore Courses View (Explore Tab) ---
+// ===============================================================
+// 2. COURSE EXPLORER VIEW
+// ===============================================================
 
 class LearnerCourseExplorerView extends ConsumerWidget {
   const LearnerCourseExplorerView({super.key});
 
-  _LearnerDashboardScreenState? _getContextState(BuildContext context) {
-    return context.findAncestorStateOfType<_LearnerDashboardScreenState>();
-  }
-
-  void _showFilterModal(BuildContext context, WidgetRef ref) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      builder: (context) {
-        return const Placeholder(child: Text('Filter Modal Placeholder'));
-      },
-    );
-  }
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(learnerCourseViewModelProvider);
-    final filteredCourses = ref.watch(learnerCourseViewModelProvider.notifier).filteredCourses;
-    
-    final String learnerName = ref.watch(authStateViewModelProvider).maybeWhen(
-      data: (userModel) => userModel?.email?.split('@').first ?? 'Learner',
-      orElse: () => 'Learner',
-    );
-    
-    final parentState = _getContextState(context);
-    final TextEditingController searchController = parentState != null 
-        ? parentState._searchController 
-        : TextEditingController();
+    final parent = context.findAncestorStateOfType<_LearnerDashboardScreenState>();
+    final searchController = parent?._searchController ?? TextEditingController();
 
+    final state = ref.watch(learnerCourseViewModelProvider);
+    final filteredCourses =
+        ref.watch(learnerCourseViewModelProvider.notifier).filteredCourses;
+
+    final learnerName = ref.watch(authStateViewModelProvider).maybeWhen(
+          data: (user) => user?.email?.split("@").first ?? "Learner",
+          orElse: () => "Learner",
+        );
 
     return CustomScrollView(
       slivers: [
         SliverAppBar(
-          title: const Text('COURSEHIVE', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black)),
+          title: const Text("COURSEHIVE",
+              style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
           pinned: true,
           backgroundColor: Colors.white,
-          elevation: 1,
           actions: [
-            // Filter Button
             IconButton(
               icon: const Icon(Icons.filter_list, color: Colors.black),
-              onPressed: () => _showFilterModal(context, ref),
+              onPressed: () => showModalBottomSheet(
+                context: context,
+                isScrollControlled: true,
+                builder: (_) => const FilterModalContent(),
+              ),
             ),
             IconButton(
               icon: const Icon(Icons.logout, color: Colors.black),
-              onPressed: () {
-                ref.read(firebaseAuthServiceProvider).signOut();
-              },
+              onPressed: () => ref.read(firebaseAuthServiceProvider).signOut(),
             ),
           ],
         ),
-        
+
+        // BODY
         SliverList(
           delegate: SliverChildListDelegate([
             Padding(
-              padding: const EdgeInsets.all(16.0),
+              padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Hello, $learnerName!', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black)),
+                  Text("Hello, $learnerName!",
+                      style: const TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black)),
                   const SizedBox(height: 20),
-                  
-                  // Search/Filter Input
+
                   TextField(
                     controller: searchController,
                     decoration: InputDecoration(
-                      hintText: 'Search courses by title or description...',
+                      hintText: "Search courses...",
                       prefixIcon: const Icon(Icons.search, color: Colors.black),
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        borderSide: const BorderSide(color: Colors.black),
-                      ),
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: const BorderSide(color: Colors.black)),
                     ),
                   ),
                   const SizedBox(height: 20),
-                  
-                  const Text('Available Courses', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black)),
+
+                  const Text("Available Courses",
+                      style:
+                          TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 10),
 
                   if (state.isLoading)
-                    const Center(child: CircularProgressIndicator(color: Colors.black))
+                    const Center(child: CircularProgressIndicator())
                   else if (state.errorMessage != null)
-                    Center(child: Text('Error: ${state.errorMessage}', style: const TextStyle(color: Colors.red)))
+                    Center(child: Text(state.errorMessage!))
                   else if (filteredCourses.isEmpty)
-                    const Center(child: Text('No courses match your criteria.', style: TextStyle(color: Colors.grey)))
+                    const Center(child: Text("No courses available"))
                   else
-                    ...filteredCourses.map((course) => _buildCourseCard(context, course)).toList(),
+                    ...filteredCourses
+                        .map((c) => _buildCourseCard(context, c))
                 ],
               ),
-            ),
+            )
           ]),
-        ),
+        )
       ],
     );
   }
-  
+
   Widget _buildCourseCard(BuildContext context, CourseModel course) {
-    return GestureDetector( 
-      onTap: () {
-        Navigator.push(
+    return Card(
+      margin: const EdgeInsets.only(bottom: 15),
+      shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+          side: const BorderSide(color: Colors.black)),
+      child: ListTile(
+        leading: const Icon(Icons.menu_book, color: Colors.black),
+        title: Text(course.title),
+        subtitle: Text("${course.category} | ₹${course.price}"),
+        trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+        onTap: () => Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => CourseDetailScreen(course: course)),
-        );
-      },
-      child: Card( 
-        color: Colors.white,
-        elevation: 2,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10), side: const BorderSide(color: Colors.black)),
-        margin: const EdgeInsets.only(bottom: 15),
-        child: ListTile( 
-          leading: const Icon(Icons.menu_book, color: Colors.black),
-          title: Text(course.title, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black)),
-          subtitle: Text('${course.category} | \$${course.price.toStringAsFixed(2)}', style: TextStyle(color: Colors.grey.shade700)),
-          trailing: const Icon(Icons.arrow_forward_ios, color: Colors.black, size: 16),
+          MaterialPageRoute(builder: (_) => CourseDetailScreen(course: course)),
         ),
       ),
     );
   }
 }
 
-// --- 3. Learner Enrolled Courses View (My Courses Tab - Step 5 FIX) ---
+// ===============================================================
+// 3. ENROLLED COURSES VIEW (FINAL PROGRESS WORKING)
+// ===============================================================
 
 class LearnerEnrolledCoursesView extends ConsumerWidget {
   const LearnerEnrolledCoursesView({super.key});
@@ -215,76 +205,88 @@ class LearnerEnrolledCoursesView extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final viewModel = ref.read(learnerCourseViewModelProvider.notifier);
-    
-    // 🔑 FIX: Read the DYNAMICALLY FILTERED LIST using the new getter
-    final enrolledCourses = viewModel.enrolledCoursesList;
-    
-    // Function to handle fetching lessons and navigating
-    void _startCourse(CourseModel course) async {
-      // Fetch the lessons for the specific course
-      final lessons = await viewModel.getLessonsForCourse(course.id);
-      
-      if (lessons.isNotEmpty) {
-        // Navigate to video player with the first lesson
-        Navigator.push(context, MaterialPageRoute(
-          builder: (_) => VideoPlayerScreen(lesson: lessons.first),
-        ));
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('No lessons found for this course.')),
-        );
-      }
+
+    final allCourses =
+        ref.watch(learnerCourseViewModelProvider.select((s) => s.allCourses));
+
+    final enrolledCourseIds = ref.watch(enrollmentProvider);
+    final completedLessons = ref.watch(progressProvider);
+
+    final enrolledCourses =
+        allCourses.where((c) => enrolledCourseIds.contains(c.id)).toList();
+
+    Widget buildTile(CourseModel course) {
+      return FutureBuilder<List<VideoLessonModel>>(
+        future: viewModel.getLessonsForCourse(course.id),
+        builder: (context, snapshot) {
+          final lessons = snapshot.data ?? [];
+          final total = lessons.length;
+          final completed =
+              lessons.where((l) => completedLessons.contains(l.id)).length;
+          final pending = total - completed;
+          final percent = total == 0 ? 0 : ((completed / total) * 100).toInt();
+
+          return ListTile(
+            title: Text(course.title),
+            subtitle: Text(
+              "Completed: $completed | Pending: $pending | Total: $total | Progress: $percent%",
+              style: const TextStyle(color: Colors.grey),
+            ),
+            trailing: const Icon(Icons.play_circle_fill, color: Colors.black),
+            onTap: () async {
+              final lessonsList = await viewModel.getLessonsForCourse(course.id);
+              if (lessonsList.isNotEmpty) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) =>
+                        VideoPlayerScreen(lesson: lessonsList.first),
+                  ),
+                );
+              }
+            },
+          );
+        },
+      );
     }
 
-
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text('My Active Courses', style: TextStyle(color: Colors.black)),
+        title:
+            const Text("My Active Courses", style: TextStyle(color: Colors.black)),
         backgroundColor: Colors.white,
         elevation: 1,
       ),
-      backgroundColor: Colors.white,
-      body: enrolledCourses.isEmpty // 🔑 Check the dynamically filtered list
-          ? const Center(child: Text('You are not currently enrolled in any courses.'))
-          : ListView.builder(
-              itemCount: enrolledCourses.length,
-              itemBuilder: (context, index) {
-                final course = enrolledCourses[index];
-                return ListTile(
-                  title: Text(course.title),
-                  subtitle: const Text('Progress: 75% (Mock)', style: TextStyle(color: Colors.grey)), 
-                  trailing: const Icon(Icons.play_circle_fill, color: Colors.black),
-                  onTap: () => _startCourse(course), // 🔑 FIX: Call navigation logic
-                );
-              },
-            ),
+      body: enrolledCourses.isEmpty
+          ? const Center(child: Text("No enrolled courses"))
+          : ListView(children: enrolledCourses.map(buildTile).toList()),
     );
   }
 }
 
-
-// --- 4. Filter Modal Widget (REQUIRED FOR FILTER BUTTON FUNCTIONALITY) ---
+// ===============================================================
+// 4. FILTER MODAL
+// ===============================================================
 
 class FilterModalContent extends ConsumerStatefulWidget {
   const FilterModalContent({super.key});
 
   @override
-  ConsumerState<FilterModalContent> createState() => _FilterModalContentState();
+  ConsumerState<FilterModalContent> createState() =>
+      _FilterModalContentState();
 }
 
 class _FilterModalContentState extends ConsumerState<FilterModalContent> {
-  // Local state to hold slider values before applying filter
   late double _currentMaxPrice;
   late double _currentMinRating;
-  
-  // Define maximum limits
-  final double _maxPriceLimit = 100000.0;
-  final double _maxRatingLimit = 5.0;
+
+  final double _maxPriceLimit = 100000;
+  final double _maxRatingLimit = 5;
 
   @override
   void initState() {
     super.initState();
-    // Initialize local state from the ViewModel's current state
     final state = ref.read(learnerCourseViewModelProvider);
     _currentMaxPrice = state.maxPriceFilter;
     _currentMinRating = state.minRatingFilter;
@@ -292,112 +294,74 @@ class _FilterModalContentState extends ConsumerState<FilterModalContent> {
 
   void _applyFilters() {
     ref.read(learnerCourseViewModelProvider.notifier).applyFilter(
-      maxPrice: _currentMaxPrice,
-      minRating: _currentMinRating,
-    );
+          maxPrice: _currentMaxPrice,
+          minRating: _currentMinRating,
+        );
     Navigator.pop(context);
   }
-  
+
   void _resetFilters() {
     setState(() {
       _currentMaxPrice = _maxPriceLimit;
-      _currentMinRating = 0.0;
+      _currentMinRating = 0;
     });
-    // Apply reset to ViewModel immediately
-    ref.read(learnerCourseViewModelProvider.notifier).applyFilter(
-      maxPrice: _maxPriceLimit,
-      minRating: 0.0,
-    );
-  }
 
+    ref.read(learnerCourseViewModelProvider.notifier).applyFilter(
+          maxPrice: _maxPriceLimit,
+          minRating: 0,
+        );
+  }
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 400,
+      height: 350,
       padding: const EdgeInsets.all(20),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text('Filter Courses', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.black)),
-              IconButton(
-                icon: const Icon(Icons.close, color: Colors.black),
-                onPressed: () => Navigator.pop(context),
-              ),
-            ],
-          ),
-          const Divider(color: Colors.grey),
+          const Text("Filter Courses",
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 10),
 
-          // 1. Price Filter (Slider)
-          const Text('Max Price', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black)),
-          Row(
-            children: [
-              Expanded(
-                child: Slider(
-                  value: _currentMaxPrice,
-                  min: 0,
-                  max: _maxPriceLimit,
-                  divisions: (_maxPriceLimit / 500).round(),
-                  activeColor: Colors.black,
-                  inactiveColor: Colors.grey.shade300,
-                  onChanged: (value) {
-                    setState(() {
-                      _currentMaxPrice = value;
-                    });
-                  },
-                ),
-              ),
-              Text('\$${_currentMaxPrice.toStringAsFixed(0)}', style: const TextStyle(fontWeight: FontWeight.bold)),
-            ],
+          // PRICE SLIDER
+          const Text("Max Price"),
+          Slider(
+            value: _currentMaxPrice,
+            min: 0,
+            max: _maxPriceLimit,
+            divisions: 200,
+            onChanged: (v) => setState(() => _currentMaxPrice = v),
           ),
-          const SizedBox(height: 15),
 
-          // 2. Rating Filter (Slider)
-          const Text('Minimum Rating', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black)),
-          Row(
-            children: [
-              Expanded(
-                child: Slider(
-                  value: _currentMinRating,
-                  min: 0,
-                  max: _maxRatingLimit,
-                  divisions: 5,
-                  activeColor: Colors.black,
-                  inactiveColor: Colors.grey.shade300,
-                  onChanged: (value) {
-                    setState(() {
-                      _currentMinRating = value;
-                    });
-                  },
-                ),
-              ),
-              Text('${_currentMinRating.toStringAsFixed(1)} ★', style: const TextStyle(fontWeight: FontWeight.bold)),
-            ],
+          // RATING SLIDER
+          const Text("Minimum Rating"),
+          Slider(
+            value: _currentMinRating,
+            min: 0,
+            max: _maxRatingLimit,
+            divisions: 5,
+            onChanged: (v) => setState(() => _currentMinRating = v),
           ),
-          const SizedBox(height: 30),
 
-          // 3. Action Buttons
+          const SizedBox(height: 20),
+
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               TextButton(
                 onPressed: _resetFilters,
-                child: const Text('Reset', style: TextStyle(color: Colors.red)),
+                child: const Text("Reset", style: TextStyle(color: Colors.red)),
               ),
               ElevatedButton(
                 onPressed: _applyFilters,
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.black),
-                child: const Text('Apply Filters', style: TextStyle(color: Colors.white)),
-              ),
+                style:
+                    ElevatedButton.styleFrom(backgroundColor: Colors.black),
+                child:
+                    const Text("Apply Filters", style: TextStyle(color: Colors.white)),
+              )
             ],
-          ),
+          )
         ],
       ),
     );

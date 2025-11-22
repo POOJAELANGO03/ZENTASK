@@ -1,4 +1,4 @@
-// lib/modules/course/view/course_detail_screen.dart (FINAL RECTIFIED STRUCTURE)
+// lib/modules/course/view/course_detail_screen.dart (FINAL CORRECTED STRUCTURE)
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -15,7 +15,7 @@ class CourseDetailScreen extends ConsumerWidget {
   final CourseModel course;
   const CourseDetailScreen({super.key, required this.course});
 
-  // Helper for Unlock Course Simulation (Step 4) - Defined outside build
+  // 🔑 FIX: Helper method _showAccessDialog is now correctly defined as a method of the class
   void _showAccessDialog(BuildContext context, CourseModel course, WidgetRef ref) { 
     final learnerUid = ref.read(authStateViewModelProvider).maybeWhen(
       data: (user) => user?.uid,
@@ -41,6 +41,7 @@ class CourseDetailScreen extends ConsumerWidget {
           TextButton(
             onPressed: () async {
               if (learnerUid != null) {
+                // Log the request to Firestore
                 await (courseService as CourseService).logAccessRequest(
                   courseId: course.id,
                   learnerUid: learnerUid,
@@ -86,7 +87,7 @@ class CourseDetailScreen extends ConsumerWidget {
     );
   }
   
-  // FIX: build method is now complete and correctly implemented
+  // 🔑 FIX: build method is now clean and correctly implemented
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     // Watch the stream of lessons for this course ID
@@ -94,7 +95,8 @@ class CourseDetailScreen extends ConsumerWidget {
     
     // Watch the set of actively enrolled course IDs
     final enrolledCourses = ref.watch(enrollmentProvider);
-    final bool isCourseUnlocked = enrolledCourses.contains(course.id); // This variable is now correctly scoped
+    // 🔑 FIX: isCourseUnlocked variable is correctly defined and scoped
+    final bool isCourseUnlocked = enrolledCourses.contains(course.id); 
 
     return Scaffold(
       backgroundColor: Colors.white,

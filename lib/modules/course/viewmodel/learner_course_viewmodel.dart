@@ -1,4 +1,4 @@
-// lib/modules/course/viewmodel/learner_course_viewmodel.dart (FULL ALTERED CODE)
+// lib/modules/course/viewmodel/learner_course_viewmodel.dart (FULL FINAL CODE)
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,7 +9,7 @@ import '../service/course_service.dart';
 import '../model/video_lesson_model.dart'; 
 import 'enrollment_provider.dart'; 
 
-// --- STATE DEFINITION (Unchanged) ---
+// --- STATE DEFINITION ---
 
 class LearnerCourseState {
   final bool isLoading;
@@ -60,11 +60,9 @@ class LearnerCourseState {
 
 class LearnerCourseViewModel extends StateNotifier<LearnerCourseState> {
   final CourseService _courseService;
-  // Store the current set of unlocked course IDs
-  final Set<String> _unlockedCourseIds; 
-
-  // ALTERED CONSTRUCTOR: Now requires the unlocked set
-  LearnerCourseViewModel(this._courseService, this._unlockedCourseIds) : super(LearnerCourseState()) {
+  
+  // 🔑 FIX 1: Removed _unlockedCourseIds dependency from constructor
+  LearnerCourseViewModel(this._courseService) : super(LearnerCourseState()) {
     _listenToAllCourses();
   }
 
@@ -82,12 +80,10 @@ class LearnerCourseViewModel extends StateNotifier<LearnerCourseState> {
        );
     });
   }
-
-  // NEW: Dynamic getter to combine the full list with current enrollment IDs
-  List<CourseModel> get enrolledCoursesList {
-    return state.allCourses.where((course) => _unlockedCourseIds.contains(course.id)).toList();
-  }
   
+  // 🔑 FIX 2: Removed obsolete enrolledCoursesList getter
+  // The VIEW will now calculate the enrolled list directly.
+
   // Logic to apply search/filter (Unchanged)
   void applyFilter({
     String? search, 
@@ -103,7 +99,7 @@ class LearnerCourseViewModel extends StateNotifier<LearnerCourseState> {
     );
   }
   
-  // Method to get the filtered list (used by the View)
+  // Method to get the filtered list (Used by Explorer Tab)
   List<CourseModel> get filteredCourses {
     List<CourseModel> courses = state.allCourses;
 
@@ -130,7 +126,7 @@ class LearnerCourseViewModel extends StateNotifier<LearnerCourseState> {
     return courses;
   }
 
-  // Method to fetch lessons for player
+  // Method to fetch lessons for player (Unchanged)
   Future<List<VideoLessonModel>> getLessonsForCourse(String courseId) async {
     try {
       final lessons = await _courseService.getCourseLessons(courseId).first;
@@ -147,9 +143,7 @@ class LearnerCourseViewModel extends StateNotifier<LearnerCourseState> {
 final learnerCourseViewModelProvider =
     StateNotifierProvider<LearnerCourseViewModel, LearnerCourseState>((ref) {
   final courseService = ref.watch(courseServiceProvider);
+  // 🔑 FIX 3: Removed watching the enrollmentProvider here
   
-  // 🔑 FIX: Watch the enrollmentProvider, safely defaulting to an empty Set
-  final Set<String> unlockedIds = ref.watch(enrollmentProvider) ?? {};
-  
-  return LearnerCourseViewModel(courseService, unlockedIds);
+  return LearnerCourseViewModel(courseService);
 });
