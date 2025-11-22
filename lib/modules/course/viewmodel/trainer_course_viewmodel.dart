@@ -1,16 +1,15 @@
-// lib/modules/course/viewmodel/trainer_course_viewmodel.dart (RECTIFIED)
+// lib/modules/course/viewmodel/trainer_course_viewmodel.dart (ALTERED - Added Enrollment Stats)
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-// 🔑 FIX: Correct relative imports for core components
 import '../../../providers.dart'; 
 import '../model/course_model.dart';
 import '../model/video_lesson_model.dart';
 import '../service/course_service.dart'; 
 import '../../auth/viewmodel/auth_state_view_model.dart'; 
 
-// --- STATE DEFINITION (Unchanged) ---
+// --- STATE DEFINITION ---
 
 class TrainerCourseState {
   final bool isLoading;
@@ -20,6 +19,10 @@ class TrainerCourseState {
   
   final String specialization; 
   final String profileDetails; 
+  
+  // 🔑 NEW: Statistics fields
+  final int totalEnrollment; 
+  final double totalRevenueEstimate; // Placeholder for future use
 
   TrainerCourseState({
     this.isLoading = false,
@@ -28,6 +31,8 @@ class TrainerCourseState {
     this.currentCourseId,
     this.specialization = '',
     this.profileDetails = '',
+    this.totalEnrollment = 0, // Initialize new fields
+    this.totalRevenueEstimate = 0.0,
   });
 
   TrainerCourseState copyWith({
@@ -37,6 +42,8 @@ class TrainerCourseState {
     String? currentCourseId,
     String? specialization,
     String? profileDetails,
+    int? totalEnrollment,
+    double? totalRevenueEstimate,
   }) {
     return TrainerCourseState(
       isLoading: isLoading ?? this.isLoading,
@@ -45,11 +52,13 @@ class TrainerCourseState {
       currentCourseId: currentCourseId,
       specialization: specialization ?? this.specialization,
       profileDetails: profileDetails ?? this.profileDetails,
+      totalEnrollment: totalEnrollment ?? this.totalEnrollment,
+      totalRevenueEstimate: totalRevenueEstimate ?? this.totalRevenueEstimate,
     );
   }
 }
 
-// --- VIEWMODEL (STATENOTIFIER) (Unchanged Logic) ---
+// --- VIEWMODEL (STATENOTIFIER) ---
 
 class TrainerCourseViewModel extends StateNotifier<TrainerCourseState> {
   final CourseService _courseService; 
@@ -61,9 +70,16 @@ class TrainerCourseViewModel extends StateNotifier<TrainerCourseState> {
     }
   }
 
+  // 🔑 ALTERED: Update state with calculated metrics
   void listenToTrainerCourses(String trainerUid) {
     _courseService.getTrainerCourses(trainerUid).listen((courses) {
-      state = state.copyWith(trainerCourses: courses);
+      // Calculate derived statistics
+      final int enrollment = _courseService.calculateTotalEnrollment(courses);
+      
+      state = state.copyWith(
+          trainerCourses: courses, 
+          totalEnrollment: enrollment,
+      );
     }).onError((error) {
        state = state.copyWith(errorMessage: 'Failed to fetch courses: $error');
     });
@@ -113,13 +129,36 @@ class TrainerCourseViewModel extends StateNotifier<TrainerCourseState> {
       return null;
     }
   }
+
+  Future<void> updateCourseListing({
+    required String courseId,
+    required String title,
+    required String description,
+    required double price,
+    required String category,
+  }) async {
+    state = state.copyWith(isLoading: true, errorMessage: null);
+
+    try {
+      await _courseService.updateCourse(
+        courseId: courseId,
+        title: title,
+        description: description,
+        price: price,
+        category: category,
+      );
+      
+      state = state.copyWith(isLoading: false);
+    } catch (e) {
+      state = state.copyWith(isLoading: false, errorMessage: 'Failed to update course: $e');
+    }
+  }
 }
 
-// --- RIVERPOD PROVIDER ---
+// --- RIVERPOD PROVIDER (Unchanged) ---
 
 final trainerCourseViewModelProvider =
     StateNotifierProvider<TrainerCourseViewModel, TrainerCourseState>((ref) {
-  // 🔑 FIX: Correctly watches the typed courseServiceProvider
   final courseService = ref.watch(courseServiceProvider); 
   final authData = ref.watch(authStateViewModelProvider);
   
@@ -128,6 +167,5 @@ final trainerCourseViewModelProvider =
     orElse: () => null,
   );
   
-  // NOTE: No need for casting if providers.dart is correctly typed
   return TrainerCourseViewModel(courseService, trainerUid);
 });

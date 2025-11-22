@@ -1,17 +1,21 @@
-// lib/modules/course/service/course_service.dart (RECTIFIED - Firebase Storage Removed)
+// lib/modules/course/service/course_service.dart (ALTERED - Added calculateTotalEnrollment)
 
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
-// REMOVED: import 'package:firebase_storage/firebase_storage.dart'; 
 import '../model/course_model.dart';
 import '../model/video_lesson_model.dart';
 
 class CourseService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  // REMOVED: final FirebaseStorage _storage = FirebaseStorage.instance; 
   
   final String _coursesCollection = 'courses';
   final String _lessonsSubcollection = 'lessons';
+
+  // 🔑 NEW: Method to calculate total enrollment from a list of courses
+  int calculateTotalEnrollment(List<CourseModel> courses) {
+    // Sums the enrolledLearners field for all courses
+    return courses.fold(0, (sum, course) => sum + course.enrolledLearners);
+  }
   
   // --- Trainer Methods ---
 
@@ -20,15 +24,29 @@ class CourseService {
     final docRef = await _firestore.collection(_coursesCollection).add(course.toFirestore());
     return docRef.id;
   }
+
+  // 2. Update an existing course listing metadata
+  Future<void> updateCourse({
+    required String courseId,
+    required String title,
+    required String description,
+    required double price,
+    required String category,
+  }) async {
+    await _firestore.collection(_coursesCollection).doc(courseId).update({
+      'title': title,
+      'description': description,
+      'price': price,
+      'category': category,
+    });
+  }
   
-  // 2. Placeholder/Structure for Video Upload (Cloudinary implementation will replace the body of this)
+  // 3. Placeholder/Structure for Video Upload (Cloudinary implementation will replace the body of this)
   Future<void> uploadVideoAndAddLesson({
     required String courseId,
     required VideoLessonModel lesson,
     required File videoFile,
   }) async {
-    // 🔑 CLOUDINARY INTEGRATION POINT 
-    
     // Simulate Cloudinary/Storage Upload
     await Future.delayed(const Duration(seconds: 1));
     const String simulatedUrl = "https://cloudinary.com/simulated-video-url/12345.mp4";
@@ -46,7 +64,7 @@ class CourseService {
     });
   }
 
-  // 3. Get all courses uploaded by a specific Trainer
+  // 4. Get all courses uploaded by a specific Trainer (Persistence Fix - uses Stream)
   Stream<List<CourseModel>> getTrainerCourses(String trainerUid) {
     return _firestore
         .collection(_coursesCollection)
