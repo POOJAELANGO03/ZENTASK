@@ -1,4 +1,4 @@
-// lib/main.dart (FINAL DEFINITIVE FIX)
+// lib/main.dart (ALTERED - Learner Routing)
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
@@ -10,10 +10,10 @@ import 'providers.dart';
 import 'modules/auth/model/user_model.dart'; 
 import 'modules/auth/viewmodel/auth_state_view_model.dart'; 
 
-// 🔑 CRITICAL IMPORT: Actual Dashboard Screens
+// CRITICAL IMPORT: Actual Dashboard Screens
 import 'modules/course/view/trainer_dashboard_screen.dart'; 
-// Placeholder imports for other dashboards
-// import 'modules/course/view/learner_dashboard_screen.dart'; 
+// 🔑 NEW IMPORT: Learner Dashboard
+import 'modules/course/view/learner_dashboard_screen.dart'; 
 // import 'modules/admin/view/admin_dashboard_screen.dart'; 
 
 
@@ -67,13 +67,12 @@ class MyApp extends ConsumerWidget {
   Widget _buildRoleBasedScreen(UserRole role, WidgetRef ref) {
     switch (role) {
       case UserRole.trainer: 
-        // 🔑 FIX: Reverting to const and requiring a CLEAN BUILD to resolve the conflict
         return const TrainerDashboardScreen();
         
       case UserRole.learner: 
-        return Scaffold(
-                appBar: AppBar(title: const Text('Learner Dashboard')),
-                body: Center(child: _buildRoleView(role, ref)));
+        // 🔑 FIX: Navigate to the new Learner Dashboard
+        return const LearnerDashboardScreen(); 
+        
       case UserRole.admin: 
         return Scaffold(
                 appBar: AppBar(title: const Text('Admin Dashboard')),

@@ -1,7 +1,8 @@
-// lib/modules/course/view/trainer_profile_screen.dart
+// lib/modules/course/view/trainer_profile_screen.dart (FINAL CORRECTED CODE WITH LOGOUT)
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../providers.dart'; // 🔑 Import providers for firebaseAuthServiceProvider
 import '../viewmodel/trainer_course_viewmodel.dart';
 
 class TrainerProfileScreen extends ConsumerStatefulWidget {
@@ -39,7 +40,7 @@ class _TrainerProfileScreenState extends ConsumerState<TrainerProfileScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Profile details saved successfully!')),
         );
-        Navigator.pop(context); // Go back to dashboard
+        // Do NOT pop here, as the screen is part of the Bottom Nav Bar
       }
     }
   }
@@ -90,6 +91,7 @@ class _TrainerProfileScreenState extends ConsumerState<TrainerProfileScreen> {
               ),
               const SizedBox(height: 40),
 
+              // 1. Save Profile Button
               ElevatedButton(
                 onPressed: state.isLoading ? null : _saveProfile,
                 style: ElevatedButton.styleFrom(
@@ -100,6 +102,23 @@ class _TrainerProfileScreenState extends ConsumerState<TrainerProfileScreen> {
                 child: state.isLoading
                     ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
                     : const Text('Save Profile', style: TextStyle(fontSize: 16, color: Colors.white)),
+              ),
+              
+              const SizedBox(height: 20),
+
+              // 🔑 2. LOGOUT BUTTON IMPLEMENTATION
+              OutlinedButton.icon(
+                onPressed: () {
+                  // Calls the sign out service via Riverpod provider
+                  ref.read(firebaseAuthServiceProvider).signOut(); 
+                },
+                icon: const Icon(Icons.logout, color: Color.fromARGB(255, 19, 19, 19)),
+                label: const Text('Logout', style: TextStyle(color: Color.fromARGB(255, 13, 13, 13))),
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: Color.fromARGB(255, 11, 11, 11)),
+                  padding: const EdgeInsets.symmetric(vertical: 15),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
               ),
             ],
           ),
