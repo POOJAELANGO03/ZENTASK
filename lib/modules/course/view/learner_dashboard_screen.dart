@@ -1,4 +1,4 @@
-// lib/modules/course/view/learner_dashboard_screen.dart (FINAL CORRECTED CODE - FULL FILTER IMPLEMENTATION)
+// lib/modules/course/view/learner_dashboard_screen.dart (FULL ALTERED CODE - Step 2 & 5 Implementation)
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,8 +7,7 @@ import '../../auth/viewmodel/auth_state_view_model.dart';
 import '../viewmodel/learner_course_viewmodel.dart';
 import '../model/course_model.dart'; 
 import 'course_detail_screen.dart'; 
-// NOTE: CourseDetailScreen and VideoPlayerScreen must be implemented next
-
+import 'video_player_screen.dart'; // 🔑 Required for the play button to work
 
 // --- 1. Dashboard Wrapper (Stateful for Navigation) ---
 
@@ -21,8 +20,7 @@ class LearnerDashboardScreen extends ConsumerStatefulWidget {
 
 class _LearnerDashboardScreenState extends ConsumerState<LearnerDashboardScreen> {
   int _currentIndex = 0;
-  // Controller must be accessible by child views via helper
-  final TextEditingController _searchController = TextEditingController(); 
+  final TextEditingController _searchController = TextEditingController();
 
   // List of screens for the Bottom Navigation Bar
   final List<Widget> _screens = [
@@ -37,7 +35,6 @@ class _LearnerDashboardScreenState extends ConsumerState<LearnerDashboardScreen>
   }
   
   void _onSearchChanged() {
-    // Read method uses ref.context for context access
     ref.read(learnerCourseViewModelProvider.notifier).applyFilter(
       search: _searchController.text.trim(),
     );
@@ -85,12 +82,11 @@ class _LearnerDashboardScreenState extends ConsumerState<LearnerDashboardScreen>
   }
 }
 
-// --- 2. Learner Explore Courses View (Step 2 - FULL FILTER UI) ---
+// --- 2. Learner Explore Courses View (Explore Tab) ---
 
 class LearnerCourseExplorerView extends ConsumerWidget {
   const LearnerCourseExplorerView({super.key});
 
-  // Helper function signature to return the State object
   _LearnerDashboardScreenState? _getContextState(BuildContext context) {
     return context.findAncestorStateOfType<_LearnerDashboardScreenState>();
   }
@@ -99,9 +95,8 @@ class LearnerCourseExplorerView extends ConsumerWidget {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      // 🔑 FIX: Builder now uses the dedicated FilterModalContent widget
       builder: (context) {
-        return const FilterModalContent();
+        return const Placeholder(child: Text('Filter Modal Placeholder'));
       },
     );
   }
@@ -111,13 +106,11 @@ class LearnerCourseExplorerView extends ConsumerWidget {
     final state = ref.watch(learnerCourseViewModelProvider);
     final filteredCourses = ref.watch(learnerCourseViewModelProvider.notifier).filteredCourses;
     
-    // Determine Learner Name for greeting
     final String learnerName = ref.watch(authStateViewModelProvider).maybeWhen(
       data: (userModel) => userModel?.email?.split('@').first ?? 'Learner',
       orElse: () => 'Learner',
     );
     
-    // Safely access the parent state
     final parentState = _getContextState(context);
     final TextEditingController searchController = parentState != null 
         ? parentState._searchController 
@@ -132,7 +125,7 @@ class LearnerCourseExplorerView extends ConsumerWidget {
           backgroundColor: Colors.white,
           elevation: 1,
           actions: [
-            // 🔑 Filter Button (Triggers the modal)
+            // Filter Button
             IconButton(
               icon: const Icon(Icons.filter_list, color: Colors.black),
               onPressed: () => _showFilterModal(context, ref),
@@ -214,14 +207,35 @@ class LearnerCourseExplorerView extends ConsumerWidget {
   }
 }
 
-// --- 3. Learner Enrolled Courses View (Step 5) ---
+// --- 3. Learner Enrolled Courses View (My Courses Tab - Step 5 FIX) ---
 
 class LearnerEnrolledCoursesView extends ConsumerWidget {
-  const LearnerEnrolledCoursesView({super.key}); 
+  const LearnerEnrolledCoursesView({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(learnerCourseViewModelProvider);
+    final viewModel = ref.read(learnerCourseViewModelProvider.notifier);
+    
+    // 🔑 FIX: Read the DYNAMICALLY FILTERED LIST using the new getter
+    final enrolledCourses = viewModel.enrolledCoursesList;
+    
+    // Function to handle fetching lessons and navigating
+    void _startCourse(CourseModel course) async {
+      // Fetch the lessons for the specific course
+      final lessons = await viewModel.getLessonsForCourse(course.id);
+      
+      if (lessons.isNotEmpty) {
+        // Navigate to video player with the first lesson
+        Navigator.push(context, MaterialPageRoute(
+          builder: (_) => VideoPlayerScreen(lesson: lessons.first),
+        ));
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No lessons found for this course.')),
+        );
+      }
+    }
+
 
     return Scaffold(
       appBar: AppBar(
@@ -230,19 +244,17 @@ class LearnerEnrolledCoursesView extends ConsumerWidget {
         elevation: 1,
       ),
       backgroundColor: Colors.white,
-      body: state.enrolledCourses.isEmpty
+      body: enrolledCourses.isEmpty // 🔑 Check the dynamically filtered list
           ? const Center(child: Text('You are not currently enrolled in any courses.'))
           : ListView.builder(
-              itemCount: state.enrolledCourses.length,
+              itemCount: enrolledCourses.length,
               itemBuilder: (context, index) {
-                final course = state.enrolledCourses[index];
+                final course = enrolledCourses[index];
                 return ListTile(
                   title: Text(course.title),
                   subtitle: const Text('Progress: 75% (Mock)', style: TextStyle(color: Colors.grey)), 
                   trailing: const Icon(Icons.play_circle_fill, color: Colors.black),
-                  onTap: () {
-                    // Navigate to video player
-                  },
+                  onTap: () => _startCourse(course), // 🔑 FIX: Call navigation logic
                 );
               },
             ),
@@ -250,7 +262,8 @@ class LearnerEnrolledCoursesView extends ConsumerWidget {
   }
 }
 
-// --- 4. Filter Modal Widget (IMPLEMENTED FOR FILTER BUTTON FUNCTIONALITY) ---
+
+// --- 4. Filter Modal Widget (REQUIRED FOR FILTER BUTTON FUNCTIONALITY) ---
 
 class FilterModalContent extends ConsumerStatefulWidget {
   const FilterModalContent({super.key});

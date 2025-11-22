@@ -1,4 +1,4 @@
-// lib/modules/course/viewmodel/learner_course_viewmodel.dart (RECTIFIED SYNTAX)
+// lib/modules/course/viewmodel/learner_course_viewmodel.dart (FULL ALTERED CODE)
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -6,8 +6,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../providers.dart';
 import '../model/course_model.dart';
 import '../service/course_service.dart';
+import '../model/video_lesson_model.dart'; 
+import 'enrollment_provider.dart'; 
 
-// --- STATE DEFINITION ---
+// --- STATE DEFINITION (Unchanged) ---
 
 class LearnerCourseState {
   final bool isLoading;
@@ -17,7 +19,6 @@ class LearnerCourseState {
   final String selectedCategory;
   final List<CourseModel> enrolledCourses; 
 
-  // UPDATED: Filter state fields
   final double maxPriceFilter; 
   final double minRatingFilter; 
 
@@ -59,20 +60,19 @@ class LearnerCourseState {
 
 class LearnerCourseViewModel extends StateNotifier<LearnerCourseState> {
   final CourseService _courseService;
+  // Store the current set of unlocked course IDs
+  final Set<String> _unlockedCourseIds; 
 
-  LearnerCourseViewModel(this._courseService) : super(LearnerCourseState()) {
+  // ALTERED CONSTRUCTOR: Now requires the unlocked set
+  LearnerCourseViewModel(this._courseService, this._unlockedCourseIds) : super(LearnerCourseState()) {
     _listenToAllCourses();
   }
 
-  // Stream Listener for all courses
+  // Stream Listener for all courses (Removed mock enrollment initialization)
   void _listenToAllCourses() {
     _courseService.getAllCourses().listen((courses) {
-      // Mock Enrollment: For testing, let's assume the first course is enrolled
-      final List<CourseModel> mockEnrollment = courses.isNotEmpty ? [courses.first] : [];
-      
       state = state.copyWith(
         allCourses: courses,
-        enrolledCourses: mockEnrollment, 
         isLoading: false,
       );
     }).onError((error) {
@@ -83,7 +83,12 @@ class LearnerCourseViewModel extends StateNotifier<LearnerCourseState> {
     });
   }
 
-  // Logic to apply search/filter (Now includes price and rating updates)
+  // NEW: Dynamic getter to combine the full list with current enrollment IDs
+  List<CourseModel> get enrolledCoursesList {
+    return state.allCourses.where((course) => _unlockedCourseIds.contains(course.id)).toList();
+  }
+  
+  // Logic to apply search/filter (Unchanged)
   void applyFilter({
     String? search, 
     String? category, 
@@ -124,12 +129,27 @@ class LearnerCourseViewModel extends StateNotifier<LearnerCourseState> {
     
     return courses;
   }
+
+  // Method to fetch lessons for player
+  Future<List<VideoLessonModel>> getLessonsForCourse(String courseId) async {
+    try {
+      final lessons = await _courseService.getCourseLessons(courseId).first;
+      return lessons;
+    } catch (e) {
+      debugPrint('Error fetching lessons for course $courseId: $e');
+      return [];
+    }
+  }
 }
 
-// --- RIVERPOD PROVIDER ---
+// --- RIVERPOD PROVIDER (ALTERED) ---
 
 final learnerCourseViewModelProvider =
     StateNotifierProvider<LearnerCourseViewModel, LearnerCourseState>((ref) {
   final courseService = ref.watch(courseServiceProvider);
-  return LearnerCourseViewModel(courseService);
+  
+  // 🔑 FIX: Watch the enrollmentProvider, safely defaulting to an empty Set
+  final Set<String> unlockedIds = ref.watch(enrollmentProvider) ?? {};
+  
+  return LearnerCourseViewModel(courseService, unlockedIds);
 });
