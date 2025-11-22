@@ -1,10 +1,13 @@
-// lib/modules/course/view/course_edit_screen.dart
+// lib/modules/course/view/course_edit_screen.dart (FINAL RECTIFICATION)
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../model/course_model.dart';
 import '../viewmodel/trainer_course_viewmodel.dart';
-// Note: We need a new service method for UPDATING the course, which we'll assume is added to CourseService later.
+// 🔑 FIX 1: This import should now succeed
+import '../viewmodel/course_lesson_viewmodel.dart'; 
+// 🔑 FIX 2: Import the Lesson Upload Screen (assuming it exists in the view folder)
+import 'lesson_upload_screen.dart'; 
 
 class CourseEditScreen extends ConsumerStatefulWidget {
   final CourseModel course;
@@ -24,7 +27,6 @@ class _CourseEditScreenState extends ConsumerState<CourseEditScreen> {
   @override
   void initState() {
     super.initState();
-    // Initialize controllers with the existing course data
     _titleController = TextEditingController(text: widget.course.title);
     _descriptionController = TextEditingController(text: widget.course.description);
     _priceController = TextEditingController(text: widget.course.price.toStringAsFixed(2));
@@ -37,7 +39,6 @@ class _CourseEditScreenState extends ConsumerState<CourseEditScreen> {
 
       final viewModel = ref.read(trainerCourseViewModelProvider.notifier);
       
-      // 🔑 NOTE: This method needs to be added to TrainerCourseViewModel (Step 2)
       await viewModel.updateCourseListing(
         courseId: widget.course.id,
         title: _titleController.text.trim(),
@@ -50,7 +51,7 @@ class _CourseEditScreenState extends ConsumerState<CourseEditScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Course updated successfully!')),
         );
-        Navigator.pop(context); // Go back to the dashboard
+        Navigator.pop(context); 
       }
     }
   }
@@ -58,6 +59,9 @@ class _CourseEditScreenState extends ConsumerState<CourseEditScreen> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(trainerCourseViewModelProvider);
+    
+    // 🔑 FIX 3: This watch now resolves correctly
+    final lessonsAsync = ref.watch(courseLessonsStreamProvider(widget.course.id));
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -79,24 +83,63 @@ class _CourseEditScreenState extends ConsumerState<CourseEditScreen> {
 
               // Title Field
               _buildTextFormField(_titleController, 'Course Title', Icons.title),
+              // ... other metadata fields (Category, Price, Description) ...
               const SizedBox(height: 15),
-
-              // Category Field
               _buildTextFormField(_categoryController, 'Category', Icons.category),
               const SizedBox(height: 15),
-
-              // Price Field
               _buildTextFormField(_priceController, 'Price (\$)', Icons.money, keyboardType: TextInputType.number),
               const SizedBox(height: 15),
-
-              // Description Field
               _buildTextFormField(_descriptionController, 'Detailed Description', Icons.description, maxLines: 5),
               const SizedBox(height: 40),
               
-              // Lessons/Upload Button (Simplified placeholder)
-              Center(
-                child: Text('${widget.course.lessonCount} Lessons Created', style: const TextStyle(color: Colors.black)),
+              // NEW: Lessons Display Section
+              const Text('Lesson Content', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black)),
+              const SizedBox(height: 15),
+
+              lessonsAsync.when(
+                loading: () => const Center(child: Text('Loading lessons...')),
+                error: (err, stack) => Center(child: Text('Error loading lessons: $err')),
+                data: (lessons) {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // FIX: Display the actual count from the fetched list
+                      Center(
+                        child: Text('${lessons.length} Lessons Created', 
+                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+
+                      // List all lessons
+                      ...lessons.map((lesson) => ListTile(
+                        leading: const Icon(Icons.videocam, color: Colors.black),
+                        title: Text(lesson.title, style: const TextStyle(color: Colors.black)),
+                        subtitle: Text(
+                          'Duration: ${lesson.durationSeconds}s | Preview: ${lesson.isPreviewable ? 'Yes' : 'No'}',
+                          style: TextStyle(color: Colors.grey.shade600),
+                        ),
+                      )).toList(),
+                      
+                      const SizedBox(height: 20),
+                      
+                      // Button to navigate to the upload screen for THIS course
+                      OutlinedButton.icon(
+                        onPressed: () {
+                          // 🔑 FIX 4: Correctly call the constructor for LessonUploadScreen
+                          Navigator.push(context, MaterialPageRoute(
+                            builder: (_) => LessonUploadScreen(courseId: widget.course.id),
+                          ));
+                        },
+                        icon: const Icon(Icons.upload_file, color: Colors.black),
+                        label: const Text('Add/Upload New Lesson', style: TextStyle(color: Colors.black)),
+                        style: OutlinedButton.styleFrom(side: const BorderSide(color: Colors.black)),
+                      ),
+                    ],
+                  );
+                },
               ),
+              
               const SizedBox(height: 40),
 
               ElevatedButton(

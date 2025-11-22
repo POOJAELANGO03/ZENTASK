@@ -1,8 +1,10 @@
-// lib/modules/course/view/course_creation_screen.dart
+// lib/modules/course/view/course_creation_screen.dart (RECTIFIED - Import/Method Fix)
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../viewmodel/trainer_course_viewmodel.dart';
+// 🔑 FIX 1: Import the Lesson Upload Screen (now created)
+import 'lesson_upload_screen.dart'; 
 
 class CourseCreationScreen extends ConsumerStatefulWidget {
   const CourseCreationScreen({super.key});
@@ -18,10 +20,11 @@ class _CourseCreationScreenState extends ConsumerState<CourseCreationScreen> {
   final TextEditingController _priceController = TextEditingController();
   final TextEditingController _categoryController = TextEditingController();
   
-  // Local state for managing the list of lessons before submitting the course
+  // Local state for managing the list of lessons (metadata only, actual files handled later)
   final List<String> _lessonTitles = [];
   final TextEditingController _lessonTitleController = TextEditingController();
 
+  // 🔑 FIX 2: Corrected the call to LessonUploadScreen (Line 52)
   void _submitCourse() async {
     if (_formKey.currentState!.validate()) {
       _formKey.currentState!.save();
@@ -36,16 +39,18 @@ class _CourseCreationScreenState extends ConsumerState<CourseCreationScreen> {
         category: _categoryController.text.trim(),
       );
 
-      // 2. If successful, proceed to handle lesson structuring (local metadata)
+      // Navigate to the Lesson Upload Screen using the new courseId
       if (mounted && courseId != null) {
         
-        // NOTE: In the real implementation (Phase 2), we would now navigate 
-        // to a dedicated video upload page using this courseId. 
-        
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Course listed successfully! Ready for video uploads.')),
+          const SnackBar(content: Text('Course listing created! Proceeding to video upload.')),
         );
-        Navigator.pop(context); // Go back to the dashboard
+        
+        // 🔑 FIX: Correctly call the constructor for LessonUploadScreen
+        Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => LessonUploadScreen(courseId: courseId)),
+        );
       } else if (mounted) {
          ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error: ${ref.read(trainerCourseViewModelProvider).errorMessage}')),
@@ -105,11 +110,11 @@ class _CourseCreationScreenState extends ConsumerState<CourseCreationScreen> {
               const Text('2. Lesson Structure (Metadata)', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black)),
               const SizedBox(height: 15),
               
-              // Lesson Title Input and Add Button
+              // Lesson Title Input and Add Button (Simplified for this form)
               Row(
                 children: [
                   Expanded(
-                    child: _buildTextFormField(_lessonTitleController, 'Lesson Title', Icons.label, validator: null),
+                    child: _buildTextFormField(_lessonTitleController, 'Lesson Title (Optional)', Icons.label, validator: (value) => null),
                   ),
                   const SizedBox(width: 10),
                   ElevatedButton(
@@ -127,7 +132,7 @@ class _CourseCreationScreenState extends ConsumerState<CourseCreationScreen> {
                   int index = entry.key;
                   String title = entry.value;
                   return ListTile(
-                    leading: Icon(Icons.videocam_outlined, color: Colors.black, size: 20),
+                    leading: const Icon(Icons.videocam_outlined, color: Colors.black, size: 20),
                     title: Text('Lesson ${index + 1}: $title', style: const TextStyle(color: Colors.black)),
                     trailing: IconButton(
                       icon: const Icon(Icons.delete, color: Colors.red),
@@ -151,7 +156,7 @@ class _CourseCreationScreenState extends ConsumerState<CourseCreationScreen> {
                 ),
                 child: state.isLoading
                     ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                    : const Text('Publish Course Listing', style: TextStyle(fontSize: 16, color: Colors.white)),
+                    : const Text('Create & Proceed to Upload', style: TextStyle(fontSize: 16, color: Colors.white)),
               ),
             ],
           ),

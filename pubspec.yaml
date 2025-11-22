@@ -13,6 +13,8 @@ dependencies:
   video_player: ^2.8.2
   chewie: ^1.7.5
   google_sign_in: ^6.1.6
+  image_picker: ^1.1.2
+  http: ^1.2.1
 
   cupertino_icons: ^1.0.8
 
