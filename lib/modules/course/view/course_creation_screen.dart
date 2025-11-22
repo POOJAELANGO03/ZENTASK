@@ -1,0 +1,195 @@
+// lib/modules/course/view/course_creation_screen.dart
+
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../viewmodel/trainer_course_viewmodel.dart';
+
+class CourseCreationScreen extends ConsumerStatefulWidget {
+  const CourseCreationScreen({super.key});
+
+  @override
+  ConsumerState<CourseCreationScreen> createState() => _CourseCreationScreenState();
+}
+
+class _CourseCreationScreenState extends ConsumerState<CourseCreationScreen> {
+  final _formKey = GlobalKey<FormState>();
+  final TextEditingController _titleController = TextEditingController();
+  final TextEditingController _descriptionController = TextEditingController();
+  final TextEditingController _priceController = TextEditingController();
+  final TextEditingController _categoryController = TextEditingController();
+  
+  // Local state for managing the list of lessons before submitting the course
+  final List<String> _lessonTitles = [];
+  final TextEditingController _lessonTitleController = TextEditingController();
+
+  void _submitCourse() async {
+    if (_formKey.currentState!.validate()) {
+      _formKey.currentState!.save();
+
+      final viewModel = ref.read(trainerCourseViewModelProvider.notifier);
+      
+      // 1. Create the Course Listing (Steps 3 & 4)
+      final courseId = await viewModel.createCourseListing(
+        title: _titleController.text.trim(),
+        description: _descriptionController.text.trim(),
+        price: double.tryParse(_priceController.text) ?? 0.0,
+        category: _categoryController.text.trim(),
+      );
+
+      // 2. If successful, proceed to handle lesson structuring (local metadata)
+      if (mounted && courseId != null) {
+        
+        // NOTE: In the real implementation (Phase 2), we would now navigate 
+        // to a dedicated video upload page using this courseId. 
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Course listed successfully! Ready for video uploads.')),
+        );
+        Navigator.pop(context); // Go back to the dashboard
+      } else if (mounted) {
+         ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: ${ref.read(trainerCourseViewModelProvider).errorMessage}')),
+        );
+      }
+    }
+  }
+
+  void _addLessonTitle() {
+    final title = _lessonTitleController.text.trim();
+    if (title.isNotEmpty) {
+      setState(() {
+        _lessonTitles.add(title);
+        _lessonTitleController.clear();
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final state = ref.watch(trainerCourseViewModelProvider);
+
+    return Scaffold(
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        title: const Text('New Course Creation', style: TextStyle(color: Colors.black)),
+        backgroundColor: Colors.white,
+        elevation: 1,
+        iconTheme: const IconThemeData(color: Colors.black),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(24.0),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Text('1. Course Details', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black)),
+              const SizedBox(height: 15),
+
+              // Title Field
+              _buildTextFormField(_titleController, 'Course Title', Icons.title),
+              const SizedBox(height: 15),
+
+              // Category Field
+              _buildTextFormField(_categoryController, 'Category (e.g., Development)', Icons.category),
+              const SizedBox(height: 15),
+
+              // Price Field
+              _buildTextFormField(_priceController, 'Price (\$)', Icons.money, keyboardType: TextInputType.number),
+              const SizedBox(height: 15),
+
+              // Description Field
+              _buildTextFormField(_descriptionController, 'Detailed Course Description', Icons.description, maxLines: 5),
+              const SizedBox(height: 30),
+
+              const Text('2. Lesson Structure (Metadata)', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black)),
+              const SizedBox(height: 15),
+              
+              // Lesson Title Input and Add Button
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildTextFormField(_lessonTitleController, 'Lesson Title', Icons.label, validator: null),
+                  ),
+                  const SizedBox(width: 10),
+                  ElevatedButton(
+                    onPressed: _addLessonTitle,
+                    style: ElevatedButton.styleFrom(backgroundColor: Colors.black, padding: const EdgeInsets.all(12)),
+                    child: const Icon(Icons.add, color: Colors.white),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 15),
+              
+              // Display Lesson Titles
+              if (_lessonTitles.isNotEmpty)
+                ..._lessonTitles.asMap().entries.map((entry) {
+                  int index = entry.key;
+                  String title = entry.value;
+                  return ListTile(
+                    leading: Icon(Icons.videocam_outlined, color: Colors.black, size: 20),
+                    title: Text('Lesson ${index + 1}: $title', style: const TextStyle(color: Colors.black)),
+                    trailing: IconButton(
+                      icon: const Icon(Icons.delete, color: Colors.red),
+                      onPressed: () {
+                        setState(() {
+                          _lessonTitles.removeAt(index);
+                        });
+                      },
+                    ),
+                  );
+                }),
+
+              const SizedBox(height: 40),
+
+              ElevatedButton(
+                onPressed: state.isLoading ? null : _submitCourse,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.black,
+                  padding: const EdgeInsets.symmetric(vertical: 15),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+                child: state.isLoading
+                    ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                    : const Text('Publish Course Listing', style: TextStyle(fontSize: 16, color: Colors.white)),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTextFormField(
+    TextEditingController controller,
+    String label,
+    IconData icon, {
+    TextInputType keyboardType = TextInputType.text,
+    int maxLines = 1,
+    String? Function(String?)? validator,
+  }) {
+    return TextFormField(
+      controller: controller,
+      keyboardType: keyboardType,
+      maxLines: maxLines,
+      decoration: InputDecoration(
+        labelText: label,
+        prefixIcon: Icon(icon, color: Colors.black),
+        labelStyle: const TextStyle(color: Colors.black),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Colors.black)),
+        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Colors.black, width: 2)),
+      ),
+      validator: validator ?? (value) => value == null || value.isEmpty ? 'Please enter the $label.' : null,
+    );
+  }
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _descriptionController.dispose();
+    _priceController.dispose();
+    _categoryController.dispose();
+    _lessonTitleController.dispose();
+    super.dispose();
+  }
+}

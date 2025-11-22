@@ -1,4 +1,4 @@
-
+// lib/main.dart (ALTERED - Trainer Routing Implemented)
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
@@ -9,6 +9,12 @@ import 'firebase_options.dart';
 import 'providers.dart';
 import 'modules/auth/model/user_model.dart'; 
 import 'modules/auth/viewmodel/auth_state_view_model.dart'; 
+
+// 🔑 NEW IMPORTS: Actual Dashboard Screens
+import 'modules/course/view/trainer_dashboard_screen.dart'; 
+// Placeholder imports for other dashboards
+// import 'modules/course/view/learner_dashboard_screen.dart'; 
+// import 'modules/admin/view/admin_dashboard_screen.dart'; 
 
 
 void main() async {
@@ -40,38 +46,39 @@ class MyApp extends ConsumerWidget {
       home: authData.when(
         data: (UserModel? userModel) {
           if (userModel != null) {
-            // User is logged in and role is determined: route to dashboard
+            // User is logged in and role is determined
             return _buildRoleBasedScreen(userModel.role, ref); 
           }
-          // User is NOT logged in: route to Login Screen
+          // User is NOT logged in
           return LoginScreen();
         },
-        // Reverting to showing a simple loading indicator during the initial check
         loading: () => const Scaffold(
           body: Center(child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(Colors.blue))),
         ),
-        // On error, show a loading indicator or route directly to login
         error: (err, stack) => Scaffold(
-          appBar: AppBar(title: const Text('Loading Error')),
-          body: Center(child: Text('Initial check failed: $err')),
+          appBar: AppBar(title: const Text('Error')),
+          body: Center(child: Text('An error occurred: $err')),
         ),
       ),
     );
   }
 
-  // Function to return the correct screen based on the UserRole (Unchanged)
+  // Function to return the correct screen based on the UserRole
   Widget _buildRoleBasedScreen(UserRole role, WidgetRef ref) {
-    // These are temporary placeholder screens
     switch (role) {
       case UserRole.trainer: 
-        return Scaffold(
-                appBar: AppBar(title: const Text('Trainer Dashboard')),
-                body: Center(child: _buildRoleView(role, ref)));
+        // 🔑 FIX: Navigate to the actual Trainer Dashboard
+        return const TrainerDashboardScreen();
+        
       case UserRole.learner: 
+        // Placeholder for Learner
+        // return const LearnerDashboardScreen();
         return Scaffold(
                 appBar: AppBar(title: const Text('Learner Dashboard')),
                 body: Center(child: _buildRoleView(role, ref)));
       case UserRole.admin: 
+        // Placeholder for Admin
+        // return const AdminDashboardScreen();
         return Scaffold(
                 appBar: AppBar(title: const Text('Admin Dashboard')),
                 body: Center(child: _buildRoleView(role, ref)));
