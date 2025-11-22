@@ -1,4 +1,4 @@
-// lib/modules/course/service/course_service.dart (RECTIFIED - Method Definitions and Timeout Fix)
+// lib/modules/course/service/course_service.dart (FINAL ALTERED CODE - Added logAccessRequest)
 
 import 'dart:io';
 import 'dart:convert';
@@ -14,13 +14,13 @@ class CourseService {
   final String _coursesCollection = 'courses';
   final String _lessonsSubcollection = 'lessons';
   
-  // 1. Create a new course listing (metadata only) - FIX: Method definition
+  // 1. Create a new course listing (metadata only)
   Future<String> createCourse(CourseModel course) async {
     final docRef = await _firestore.collection(_coursesCollection).add(course.toFirestore());
     return docRef.id;
   }
 
-  // 2. Update an existing course listing metadata - FIX: Method definition
+  // 2. Update an existing course listing metadata
   Future<void> updateCourse({
     required String courseId,
     required String title,
@@ -36,7 +36,7 @@ class CourseService {
     });
   }
   
-  // 3. Upload Video Lesson - FIX: Timeout on response stream removed
+  // 3. Upload Video Lesson
   Future<void> uploadVideoAndAddLesson({
     required String courseId,
     required VideoLessonModel lesson,
@@ -58,7 +58,6 @@ class CourseService {
 
     final streamedResponse = await request.send();
     
-    // 🔑 FIX: Removed the incorrect .timeout() method call
     final response = await http.Response.fromStream(streamedResponse); 
     
     onProgress(1.0); 
@@ -88,7 +87,7 @@ class CourseService {
     });
   }
   
-  // 4. Get all courses uploaded by a specific Trainer - FIX: Method definition
+  // 4. Get all courses uploaded by a specific Trainer
   Stream<List<CourseModel>> getTrainerCourses(String trainerUid) {
     return _firestore
         .collection(_coursesCollection)
@@ -99,12 +98,26 @@ class CourseService {
         );
   }
   
-  // 5. Calculate total enrollment - FIX: Method definition
+  // 5. Calculate total enrollment
   int calculateTotalEnrollment(List<CourseModel> courses) {
     return courses.fold(0, (sum, course) => sum + course.enrolledLearners);
   }
 
-  // --- Learner Methods (Placeholder) ---
+  // 🔑 NEW IMPLEMENTATION: Log an access request for a course (Fix for Step 2)
+  Future<void> logAccessRequest({
+    required String courseId,
+    required String learnerUid,
+  }) async {
+    // We log the request in a separate collection 
+    await _firestore.collection('access_requests').add({
+      'courseId': courseId,
+      'learnerUid': learnerUid,
+      'status': 'Pending', // Trainer must manually approve/change this status
+      'requestedAt': FieldValue.serverTimestamp(),
+    });
+  }
+
+  // --- Learner Methods ---
   
   Stream<List<CourseModel>> getAllCourses() {
     return _firestore

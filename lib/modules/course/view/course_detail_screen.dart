@@ -1,55 +1,101 @@
-// lib/modules/course/view/course_detail_screen.dart (FINAL FIX - Enrollment Tracking)
+// lib/modules/course/view/course_detail_screen.dart (FINAL RECTIFIED STRUCTURE)
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../model/course_model.dart';
 import '../viewmodel/course_lesson_viewmodel.dart'; 
-// 🔑 NEW IMPORT: Enrollment Provider
 import '../viewmodel/enrollment_provider.dart'; 
-// NOTE: VideoPlayerScreen import required
 import 'video_player_screen.dart'; 
+import '../../../providers.dart'; 
+import '../../auth/viewmodel/auth_state_view_model.dart';
+import '../service/course_service.dart';
+
 
 class CourseDetailScreen extends ConsumerWidget {
   final CourseModel course;
   const CourseDetailScreen({super.key, required this.course});
 
+  // Helper for Unlock Course Simulation (Step 4) - Defined outside build
+  void _showAccessDialog(BuildContext context, CourseModel course, WidgetRef ref) { 
+    final learnerUid = ref.read(authStateViewModelProvider).maybeWhen(
+      data: (user) => user?.uid,
+      orElse: () => null,
+    );
+    final courseService = ref.read(courseServiceProvider); 
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Unlock Access'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Price: \$${course.price.toStringAsFixed(2)}'),
+            const SizedBox(height: 10),
+            const Text('Choose access method:'),
+          ],
+        ),
+        actions: [
+          // 1. Request Access Button
+          TextButton(
+            onPressed: () async {
+              if (learnerUid != null) {
+                await (courseService as CourseService).logAccessRequest(
+                  courseId: course.id,
+                  learnerUid: learnerUid,
+                );
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Access request sent to Trainer for review.')),
+                );
+              } else {
+                 ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Error: Must be logged in to request access.')),
+                );
+              }
+            },
+            child: const Text('Request Access', style: TextStyle(color: Colors.black)),
+          ),
+          
+          // 2. Simulated Payment Button
+          ElevatedButton(
+            onPressed: () {
+              // Simulates payment and grants immediate access
+              ref.read(enrollmentProvider.notifier).unlockCourse(course.id);
+              Navigator.pop(context); 
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Course unlocked successfully! (Simulated Payment)')),
+              );
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.black),
+            child: const Text('Simulate Payment', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  // Helper for Course Info Chips
+  Widget _buildInfoChip(IconData icon, String text) {
+    return Chip(
+      avatar: Icon(icon, size: 18, color: Colors.black),
+      label: Text(text, style: const TextStyle(color: Colors.black)),
+      backgroundColor: Colors.grey.shade100,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8), side: const BorderSide(color: Colors.black)),
+    );
+  }
+  
+  // FIX: build method is now complete and correctly implemented
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     // Watch the stream of lessons for this course ID
     final lessonsAsync = ref.watch(courseLessonsStreamProvider(course.id));
-    // 🔑 NEW: Watch the set of actively enrolled course IDs
+    
+    // Watch the set of actively enrolled course IDs
     final enrolledCourses = ref.watch(enrollmentProvider);
-    final bool isCourseUnlocked = enrolledCourses.contains(course.id); // 🔑 Check status dynamically
-    
-    // Helper for Unlock Course Simulation (Step 4)
-    void _showAccessDialog(BuildContext context, double price) {
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Simulated Payment'),
-          content: Text('Confirm purchase of the course for \$${price.toStringAsFixed(2)}?'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel', style: TextStyle(color: Colors.black)),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                // 🔑 FIX: CALL THE NOTIFIER TO UNLOCK THE COURSE ID
-                ref.read(enrollmentProvider.notifier).unlockCourse(course.id);
-                Navigator.pop(context); // Close dialog
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Course unlocked successfully! (Simulated)')),
-                );
-              },
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.black),
-              child: const Text('Confirm', style: TextStyle(color: Colors.white)),
-            ),
-          ],
-        ),
-      );
-    }
-    
+    final bool isCourseUnlocked = enrolledCourses.contains(course.id); // This variable is now correctly scoped
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -94,7 +140,7 @@ class CourseDetailScreen extends ConsumerWidget {
                     // List all lessons
                     ...lessons.map((lesson) {
                       final isPreview = lesson.isPreviewable;
-                      final isPlayable = isPreview || isCourseUnlocked; // 🔑 CHECK: Is it free or is the course unlocked?
+                      final isPlayable = isPreview || isCourseUnlocked; 
 
                       return ListTile(
                         leading: Icon(
@@ -122,11 +168,12 @@ class CourseDetailScreen extends ConsumerWidget {
 
                     const SizedBox(height: 40),
                     
-                    // 🔑 Unlock Course Button (Step 4)
+                    // Unlock Course Button (Step 4)
                     if (!isCourseUnlocked)
                       ElevatedButton(
                         onPressed: () {
-                          _showAccessDialog(context, course.price);
+                          // FIX: Call the helper function with the required parameters
+                          _showAccessDialog(context, course, ref); 
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.black,
@@ -147,16 +194,6 @@ class CourseDetailScreen extends ConsumerWidget {
           ],
         ),
       ),
-    );
-  }
-  
-  // Helper for Course Info Chips
-  Widget _buildInfoChip(IconData icon, String text) {
-    return Chip(
-      avatar: Icon(icon, size: 18, color: Colors.black),
-      label: Text(text, style: const TextStyle(color: Colors.black)),
-      backgroundColor: Colors.grey.shade100,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8), side: const BorderSide(color: Colors.black)),
     );
   }
 }

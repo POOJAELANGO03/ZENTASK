@@ -1,4 +1,4 @@
-// lib/modules/course/viewmodel/learner_course_viewmodel.dart (NEW FILE)
+// lib/modules/course/viewmodel/learner_course_viewmodel.dart (RECTIFIED SYNTAX)
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -12,10 +12,14 @@ import '../service/course_service.dart';
 class LearnerCourseState {
   final bool isLoading;
   final String? errorMessage;
-  final List<CourseModel> allCourses; // Full list fetched from Firestore
+  final List<CourseModel> allCourses; 
   final String searchQuery;
-  final String selectedCategory; // Used for filtering
-  final List<CourseModel> enrolledCourses; // Courses the Learner has unlocked (Mock state)
+  final String selectedCategory;
+  final List<CourseModel> enrolledCourses; 
+
+  // UPDATED: Filter state fields
+  final double maxPriceFilter; 
+  final double minRatingFilter; 
 
   LearnerCourseState({
     this.isLoading = true,
@@ -24,6 +28,8 @@ class LearnerCourseState {
     this.searchQuery = '',
     this.selectedCategory = 'All',
     this.enrolledCourses = const [],
+    this.maxPriceFilter = 100000.0, 
+    this.minRatingFilter = 0.0,
   });
 
   LearnerCourseState copyWith({
@@ -33,6 +39,8 @@ class LearnerCourseState {
     String? searchQuery,
     String? selectedCategory,
     List<CourseModel>? enrolledCourses,
+    double? maxPriceFilter,
+    double? minRatingFilter,
   }) {
     return LearnerCourseState(
       isLoading: isLoading ?? this.isLoading,
@@ -41,6 +49,8 @@ class LearnerCourseState {
       searchQuery: searchQuery ?? this.searchQuery,
       selectedCategory: selectedCategory ?? this.selectedCategory,
       enrolledCourses: enrolledCourses ?? this.enrolledCourses,
+      maxPriceFilter: maxPriceFilter ?? this.maxPriceFilter,
+      minRatingFilter: minRatingFilter ?? this.minRatingFilter,
     );
   }
 }
@@ -57,7 +67,7 @@ class LearnerCourseViewModel extends StateNotifier<LearnerCourseState> {
   // Stream Listener for all courses
   void _listenToAllCourses() {
     _courseService.getAllCourses().listen((courses) {
-      // 🔑 Mock Enrollment: For testing, let's assume the first course is enrolled
+      // Mock Enrollment: For testing, let's assume the first course is enrolled
       final List<CourseModel> mockEnrollment = courses.isNotEmpty ? [courses.first] : [];
       
       state = state.copyWith(
@@ -73,11 +83,18 @@ class LearnerCourseViewModel extends StateNotifier<LearnerCourseState> {
     });
   }
 
-  // Logic to apply search/filter
-  void applyFilter({String? search, String? category}) {
+  // Logic to apply search/filter (Now includes price and rating updates)
+  void applyFilter({
+    String? search, 
+    String? category, 
+    double? maxPrice, 
+    double? minRating,
+  }) {
     state = state.copyWith(
       searchQuery: search ?? state.searchQuery,
       selectedCategory: category ?? state.selectedCategory,
+      maxPriceFilter: maxPrice ?? state.maxPriceFilter,
+      minRatingFilter: minRating ?? state.minRatingFilter,
     );
   }
   
@@ -85,12 +102,7 @@ class LearnerCourseViewModel extends StateNotifier<LearnerCourseState> {
   List<CourseModel> get filteredCourses {
     List<CourseModel> courses = state.allCourses;
 
-    // 1. Filter by Category
-    if (state.selectedCategory != 'All') {
-      courses = courses.where((c) => c.category == state.selectedCategory).toList();
-    }
-
-    // 2. Filter by Search Query
+    // 1. Filter by Search Query
     if (state.searchQuery.isNotEmpty) {
       final query = state.searchQuery.toLowerCase();
       courses = courses.where((c) => 
@@ -98,6 +110,17 @@ class LearnerCourseViewModel extends StateNotifier<LearnerCourseState> {
         c.description.toLowerCase().contains(query)
       ).toList();
     }
+    
+    // 2. Filter by Category
+    if (state.selectedCategory != 'All') {
+      courses = courses.where((c) => c.category == state.selectedCategory).toList();
+    }
+
+    // Filter by Price
+    courses = courses.where((c) => c.price <= state.maxPriceFilter).toList();
+
+    // Filter by Rating
+    courses = courses.where((c) => c.rating >= state.minRatingFilter).toList();
     
     return courses;
   }

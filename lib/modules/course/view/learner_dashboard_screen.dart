@@ -1,17 +1,13 @@
-// lib/modules/course/view/learner_dashboard_screen.dart (FINAL ALTERED CODE - Step 3 Navigation Fix)
+// lib/modules/course/view/learner_dashboard_screen.dart (FINAL CORRECTED CODE - FULL FILTER IMPLEMENTATION)
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../providers.dart';
 import '../../auth/viewmodel/auth_state_view_model.dart';
 import '../viewmodel/learner_course_viewmodel.dart';
-
-// We use the existing model
 import '../model/course_model.dart'; 
-// NOTE: CourseDetailScreen and VideoPlayerScreen must be implemented next
-// 🔑 FIX 1: Import the correct detail screen (assuming it exists in the view folder)
 import 'course_detail_screen.dart'; 
-// import 'course_edit_screen.dart'; // REMOVED temporary placeholder import
+// NOTE: CourseDetailScreen and VideoPlayerScreen must be implemented next
 
 
 // --- 1. Dashboard Wrapper (Stateful for Navigation) ---
@@ -25,7 +21,8 @@ class LearnerDashboardScreen extends ConsumerStatefulWidget {
 
 class _LearnerDashboardScreenState extends ConsumerState<LearnerDashboardScreen> {
   int _currentIndex = 0;
-  final TextEditingController _searchController = TextEditingController();
+  // Controller must be accessible by child views via helper
+  final TextEditingController _searchController = TextEditingController(); 
 
   // List of screens for the Bottom Navigation Bar
   final List<Widget> _screens = [
@@ -88,10 +85,26 @@ class _LearnerDashboardScreenState extends ConsumerState<LearnerDashboardScreen>
   }
 }
 
-// --- 2. Learner Explore Courses View (Step 2) ---
+// --- 2. Learner Explore Courses View (Step 2 - FULL FILTER UI) ---
 
 class LearnerCourseExplorerView extends ConsumerWidget {
   const LearnerCourseExplorerView({super.key});
+
+  // Helper function signature to return the State object
+  _LearnerDashboardScreenState? _getContextState(BuildContext context) {
+    return context.findAncestorStateOfType<_LearnerDashboardScreenState>();
+  }
+
+  void _showFilterModal(BuildContext context, WidgetRef ref) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      // 🔑 FIX: Builder now uses the dedicated FilterModalContent widget
+      builder: (context) {
+        return const FilterModalContent();
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -104,10 +117,12 @@ class LearnerCourseExplorerView extends ConsumerWidget {
       orElse: () => 'Learner',
     );
     
-    // Helper to access the state of the parent StatefulWidget for the search controller
-    State<StatefulWidget>? _getContextState(BuildContext context) {
-      return context.findAncestorStateOfType<_LearnerDashboardScreenState>();
-    }
+    // Safely access the parent state
+    final parentState = _getContextState(context);
+    final TextEditingController searchController = parentState != null 
+        ? parentState._searchController 
+        : TextEditingController();
+
 
     return CustomScrollView(
       slivers: [
@@ -117,6 +132,11 @@ class LearnerCourseExplorerView extends ConsumerWidget {
           backgroundColor: Colors.white,
           elevation: 1,
           actions: [
+            // 🔑 Filter Button (Triggers the modal)
+            IconButton(
+              icon: const Icon(Icons.filter_list, color: Colors.black),
+              onPressed: () => _showFilterModal(context, ref),
+            ),
             IconButton(
               icon: const Icon(Icons.logout, color: Colors.black),
               onPressed: () {
@@ -136,9 +156,9 @@ class LearnerCourseExplorerView extends ConsumerWidget {
                   Text('Hello, $learnerName!', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black)),
                   const SizedBox(height: 20),
                   
-                  // Search/Filter Input (Using the controller from the parent StatefulWidget)
+                  // Search/Filter Input
                   TextField(
-                    controller: (_getContextState(context) as _LearnerDashboardScreenState)._searchController,
+                    controller: searchController,
                     decoration: InputDecoration(
                       hintText: 'Search courses by title or description...',
                       prefixIcon: const Icon(Icons.search, color: Colors.black),
@@ -158,7 +178,7 @@ class LearnerCourseExplorerView extends ConsumerWidget {
                   else if (state.errorMessage != null)
                     Center(child: Text('Error: ${state.errorMessage}', style: const TextStyle(color: Colors.red)))
                   else if (filteredCourses.isEmpty)
-                    const Center(child: Text('No courses match your search criteria.', style: TextStyle(color: Colors.grey)))
+                    const Center(child: Text('No courses match your criteria.', style: TextStyle(color: Colors.grey)))
                   else
                     ...filteredCourses.map((course) => _buildCourseCard(context, course)).toList(),
                 ],
@@ -171,24 +191,24 @@ class LearnerCourseExplorerView extends ConsumerWidget {
   }
   
   Widget _buildCourseCard(BuildContext context, CourseModel course) {
-    return Card(
-      color: Colors.white,
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10), side: const BorderSide(color: Colors.black)),
-      margin: const EdgeInsets.only(bottom: 15),
-      child: ListTile(
-        leading: const Icon(Icons.menu_book, color: Colors.black),
-        title: Text(course.title, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black)),
-        subtitle: Text('${course.category} | \$${course.price.toStringAsFixed(2)}', style: TextStyle(color: Colors.grey.shade700)),
-        trailing: const Icon(Icons.arrow_forward_ios, color: Colors.black, size: 16),
-        onTap: () {
-          // 🔑 FIX 2: Navigate to the Course Detail Screen 
-          Navigator.push(
-            context,
-            // Changed navigation destination to the correct CourseDetailScreen
-            MaterialPageRoute(builder: (context) => CourseDetailScreen(course: course)),
-          );
-        },
+    return GestureDetector( 
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => CourseDetailScreen(course: course)),
+        );
+      },
+      child: Card( 
+        color: Colors.white,
+        elevation: 2,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10), side: const BorderSide(color: Colors.black)),
+        margin: const EdgeInsets.only(bottom: 15),
+        child: ListTile( 
+          leading: const Icon(Icons.menu_book, color: Colors.black),
+          title: Text(course.title, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black)),
+          subtitle: Text('${course.category} | \$${course.price.toStringAsFixed(2)}', style: TextStyle(color: Colors.grey.shade700)),
+          trailing: const Icon(Icons.arrow_forward_ios, color: Colors.black, size: 16),
+        ),
       ),
     );
   }
@@ -197,7 +217,7 @@ class LearnerCourseExplorerView extends ConsumerWidget {
 // --- 3. Learner Enrolled Courses View (Step 5) ---
 
 class LearnerEnrolledCoursesView extends ConsumerWidget {
-  const LearnerEnrolledCoursesView({super.key});
+  const LearnerEnrolledCoursesView({super.key}); 
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -226,6 +246,147 @@ class LearnerEnrolledCoursesView extends ConsumerWidget {
                 );
               },
             ),
+    );
+  }
+}
+
+// --- 4. Filter Modal Widget (IMPLEMENTED FOR FILTER BUTTON FUNCTIONALITY) ---
+
+class FilterModalContent extends ConsumerStatefulWidget {
+  const FilterModalContent({super.key});
+
+  @override
+  ConsumerState<FilterModalContent> createState() => _FilterModalContentState();
+}
+
+class _FilterModalContentState extends ConsumerState<FilterModalContent> {
+  // Local state to hold slider values before applying filter
+  late double _currentMaxPrice;
+  late double _currentMinRating;
+  
+  // Define maximum limits
+  final double _maxPriceLimit = 100000.0;
+  final double _maxRatingLimit = 5.0;
+
+  @override
+  void initState() {
+    super.initState();
+    // Initialize local state from the ViewModel's current state
+    final state = ref.read(learnerCourseViewModelProvider);
+    _currentMaxPrice = state.maxPriceFilter;
+    _currentMinRating = state.minRatingFilter;
+  }
+
+  void _applyFilters() {
+    ref.read(learnerCourseViewModelProvider.notifier).applyFilter(
+      maxPrice: _currentMaxPrice,
+      minRating: _currentMinRating,
+    );
+    Navigator.pop(context);
+  }
+  
+  void _resetFilters() {
+    setState(() {
+      _currentMaxPrice = _maxPriceLimit;
+      _currentMinRating = 0.0;
+    });
+    // Apply reset to ViewModel immediately
+    ref.read(learnerCourseViewModelProvider.notifier).applyFilter(
+      maxPrice: _maxPriceLimit,
+      minRating: 0.0,
+    );
+  }
+
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 400,
+      padding: const EdgeInsets.all(20),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('Filter Courses', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.black)),
+              IconButton(
+                icon: const Icon(Icons.close, color: Colors.black),
+                onPressed: () => Navigator.pop(context),
+              ),
+            ],
+          ),
+          const Divider(color: Colors.grey),
+
+          // 1. Price Filter (Slider)
+          const Text('Max Price', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black)),
+          Row(
+            children: [
+              Expanded(
+                child: Slider(
+                  value: _currentMaxPrice,
+                  min: 0,
+                  max: _maxPriceLimit,
+                  divisions: (_maxPriceLimit / 500).round(),
+                  activeColor: Colors.black,
+                  inactiveColor: Colors.grey.shade300,
+                  onChanged: (value) {
+                    setState(() {
+                      _currentMaxPrice = value;
+                    });
+                  },
+                ),
+              ),
+              Text('\$${_currentMaxPrice.toStringAsFixed(0)}', style: const TextStyle(fontWeight: FontWeight.bold)),
+            ],
+          ),
+          const SizedBox(height: 15),
+
+          // 2. Rating Filter (Slider)
+          const Text('Minimum Rating', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black)),
+          Row(
+            children: [
+              Expanded(
+                child: Slider(
+                  value: _currentMinRating,
+                  min: 0,
+                  max: _maxRatingLimit,
+                  divisions: 5,
+                  activeColor: Colors.black,
+                  inactiveColor: Colors.grey.shade300,
+                  onChanged: (value) {
+                    setState(() {
+                      _currentMinRating = value;
+                    });
+                  },
+                ),
+              ),
+              Text('${_currentMinRating.toStringAsFixed(1)} ★', style: const TextStyle(fontWeight: FontWeight.bold)),
+            ],
+          ),
+          const SizedBox(height: 30),
+
+          // 3. Action Buttons
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              TextButton(
+                onPressed: _resetFilters,
+                child: const Text('Reset', style: TextStyle(color: Colors.red)),
+              ),
+              ElevatedButton(
+                onPressed: _applyFilters,
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.black),
+                child: const Text('Apply Filters', style: TextStyle(color: Colors.white)),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }
