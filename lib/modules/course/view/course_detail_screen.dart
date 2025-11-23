@@ -10,6 +10,9 @@ import '../../../providers.dart';
 import '../../auth/viewmodel/auth_state_view_model.dart';
 import '../service/course_service.dart';
 
+const Color primaryColor = Color(0xFF9ECAD6);
+const Color backgroundColor = Color(0xFFE9E3DF);
+
 class CourseDetailScreen extends ConsumerWidget {
   final CourseModel course;
   const CourseDetailScreen({super.key, required this.course});
@@ -120,10 +123,10 @@ class CourseDetailScreen extends ConsumerWidget {
     final bool isCourseUnlocked = enrolledCourses.contains(course.id); 
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: backgroundColor,
       appBar: AppBar(
         title: Text(course.title, style: const TextStyle(color: Colors.black)),
-        backgroundColor: Colors.white,
+        backgroundColor:primaryColor,
         elevation: 1,
         iconTheme: const IconThemeData(color: Colors.black),
       ),
@@ -213,7 +216,7 @@ class CourseDetailScreen extends ConsumerWidget {
                           _showAccessDialog(context, course, ref); 
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.black,
+                          backgroundColor: primaryColor,
                           padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(10),
@@ -221,13 +224,13 @@ class CourseDetailScreen extends ConsumerWidget {
                         ),
                         child: Text(
                           'Unlock Course for \$${course.price.toStringAsFixed(2)}',
-                          style: const TextStyle(fontSize: 18, color: Colors.white),
+                          style: const TextStyle(fontSize: 18, color: Color.fromARGB(255, 9, 9, 9)),
                         ),
                       )
                     else
                       const Text(
                         'Course successfully unlocked! View lessons above.', 
-                        style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold),
+                        style: TextStyle(color: Color.fromARGB(255, 10, 10, 10), fontWeight: FontWeight.bold),
                       ),
                   ],
                 );
