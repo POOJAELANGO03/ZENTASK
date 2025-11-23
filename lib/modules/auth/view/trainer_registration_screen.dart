@@ -65,10 +65,10 @@ class _TrainerRegistrationScreenState extends ConsumerState<TrainerRegistrationS
               Center(
                 child: Image.asset(
                   'assets/images/trainer.jpg', 
-                  height: 200, // Increased height
+                  height: 290, // Increased height
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 82),
 
               Text(
                 'Join as a Trainer',

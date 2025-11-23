@@ -1,4 +1,5 @@
-// lib/modules/auth/view/learner_registration_screen.dart (ALTERED - Image Size & White BG)
+// lib/modules/auth/view/learner_registration_screen.dart 
+// (ALTERED - Added precacheImage + No UI changes)
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,20 +10,33 @@ class LearnerRegistrationScreen extends ConsumerStatefulWidget {
   const LearnerRegistrationScreen({super.key});
 
   @override
-  ConsumerState<LearnerRegistrationScreen> createState() => _LearnerRegistrationScreenState();
+  ConsumerState<LearnerRegistrationScreen> createState() =>
+      _LearnerRegistrationScreenState();
 }
 
-class _LearnerRegistrationScreenState extends ConsumerState<LearnerRegistrationScreen> {
+class _LearnerRegistrationScreenState
+    extends ConsumerState<LearnerRegistrationScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  final UserRole _selectedRole = UserRole.learner; 
+  final UserRole _selectedRole = UserRole.learner;
+
+  @override
+  void initState() {
+    super.initState();
+
+    // 🔥 FIX: Preload learner image so it appears instantly
+    precacheImage(
+      const AssetImage("assets/images/learner.jpg"),
+      context,
+    );
+  }
 
   void _register() {
     ref.read(registerViewModelProvider.notifier).register(
-      _emailController.text.trim(),
-      _passwordController.text.trim(),
-      _selectedRole,
-    );
+          _emailController.text.trim(),
+          _passwordController.text.trim(),
+          _selectedRole,
+        );
   }
 
   @override
@@ -40,9 +54,10 @@ class _LearnerRegistrationScreenState extends ConsumerState<LearnerRegistrationS
         );
       } else if (current.isRegistered) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Learner account created! Please login.')),
+          const SnackBar(
+              content: Text('Learner account created! Please login.')),
         );
-        Navigator.of(context).popUntil((route) => route.isFirst); 
+        Navigator.of(context).popUntil((route) => route.isFirst);
       }
     });
 
@@ -51,9 +66,9 @@ class _LearnerRegistrationScreenState extends ConsumerState<LearnerRegistrationS
         title: const Text('Register as LEARNER'),
         backgroundColor: Colors.white,
         elevation: 0,
-        foregroundColor: Colors.black, // Ensure title is black
+        foregroundColor: Colors.black,
       ),
-      backgroundColor: Colors.white, // 🔑 PURE WHITE BACKGROUND
+      backgroundColor: Colors.white,
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(32.0),
@@ -61,41 +76,54 @@ class _LearnerRegistrationScreenState extends ConsumerState<LearnerRegistrationS
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // 🔑 IMAGE HEIGHT INCREASED
               Center(
                 child: Image.asset(
-                  'assets/images/learner.jpg', 
-                  height: 200, // Increased height
+                  'assets/images/learner.jpg',
+                  height: 290,
                 ),
               ),
-              const SizedBox(height: 24),
-              
+              const SizedBox(height: 82),
+
               Text(
                 'Join as a Learner',
-                style: theme.textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold, color: Colors.black),
+                style: theme.textTheme.headlineMedium?.copyWith(
+                    fontWeight: FontWeight.bold, color: Colors.black),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 24),
-              
+
               TextFormField(
                 controller: _emailController,
-                decoration: const InputDecoration(labelText: 'Email Address', prefixIcon: Icon(Icons.email_outlined, color: Colors.black)),
+                decoration: const InputDecoration(
+                    labelText: 'Email Address',
+                    prefixIcon:
+                        Icon(Icons.email_outlined, color: Colors.black)),
                 keyboardType: TextInputType.emailAddress,
               ),
               const SizedBox(height: 16),
+
               TextFormField(
                 controller: _passwordController,
-                decoration: const InputDecoration(labelText: 'Password (min 6 chars)', prefixIcon: Icon(Icons.lock_outline, color: Colors.black)),
+                decoration: const InputDecoration(
+                    labelText: 'Password (min 6 chars)',
+                    prefixIcon:
+                        Icon(Icons.lock_outline, color: Colors.black)),
                 obscureText: true,
               ),
               const SizedBox(height: 32),
-              
+
               ElevatedButton(
                 onPressed: state.isLoading ? null : _register,
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.black), // PURE BLACK BUTTON
+                style:
+                    ElevatedButton.styleFrom(backgroundColor: Colors.black),
                 child: state.isLoading
-                    ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                    : const Text('Register Learner', style: TextStyle(fontSize: 18, color: Colors.white)),
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child:
+                            CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                    : const Text('Register Learner',
+                        style: TextStyle(fontSize: 18, color: Colors.white)),
               ),
             ],
           ),

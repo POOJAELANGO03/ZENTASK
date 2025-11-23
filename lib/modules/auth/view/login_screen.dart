@@ -1,33 +1,30 @@
-// lib/modules/auth/view/login_screen.dart (ALTERED - Pure White Background)
+// lib/modules/auth/view/login_screen.dart (UPDATED — Added profile GIF)
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../viewmodel/login_view_model.dart';
-import 'role_selection_screen.dart'; 
+import 'role_selection_screen.dart';
 
-
-// Converted from StatefulWidget to a stateless ConsumerWidget
 class LoginScreen extends ConsumerWidget {
   LoginScreen({super.key});
 
-  final TextEditingController _emailController = TextEditingController(); 
+  final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
-  // Local state for password visibility (must be managed using local state)
-  final StateProvider<bool> isPasswordVisibleProvider = StateProvider<bool>((ref) => false);
+  final StateProvider<bool> isPasswordVisibleProvider =
+      StateProvider<bool>((ref) => false);
 
   void _login(WidgetRef ref) {
     FocusScope.of(ref.context).unfocus();
-    
+
     ref.read(loginViewModelProvider.notifier).signIn(
-      _emailController.text.trim(),
-      _passwordController.text.trim(),
-    );
+          _emailController.text.trim(),
+          _passwordController.text.trim(),
+        );
   }
 
   void _signInWithGoogle(WidgetRef ref) {
     FocusScope.of(ref.context).unfocus();
-    
     ref.read(loginViewModelProvider.notifier).signInWithGoogle();
   }
 
@@ -35,11 +32,11 @@ class LoginScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(loginViewModelProvider);
     final isPasswordVisible = ref.watch(isPasswordVisibleProvider);
-    final isPasswordVisibleNotifier = ref.read(isPasswordVisibleProvider.notifier);
-
+    final isPasswordVisibleNotifier =
+        ref.read(isPasswordVisibleProvider.notifier);
 
     return Scaffold(
-      backgroundColor: Colors.white, // 🔑 PURE WHITE BACKGROUND
+      backgroundColor: Colors.white,
       body: SingleChildScrollView(
         child: SafeArea(
           child: Padding(
@@ -47,26 +44,42 @@ class LoginScreen extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                SizedBox(height: MediaQuery.of(context).size.height * 0.1),
+
+                SizedBox(height: MediaQuery.of(context).size.height * 0.05),
+
+                // ⭐ ADDED PROFILE GIF HERE ⭐
+                Center(
+                  child: Image.asset(
+                    'assets/images/profile_8121295.gif',
+                    height: 180,
+                  ),
+                ),
+
+                const SizedBox(height: 30),
+
                 const Text(
                   "WELCOME TO COURSEHIVE!",
                   style: TextStyle(
-                    fontSize: 32,
+                    fontSize: 26,
                     fontWeight: FontWeight.bold,
                     color: Colors.black,
                   ),
                 ),
+
                 const SizedBox(height: 40),
+
                 _buildTextField(
                   controller: _emailController,
                   hintText: 'Enter your email',
-                  obscureText: false, 
+                  obscureText: false,
                 ),
+
                 const SizedBox(height: 16),
+
                 _buildTextField(
                   controller: _passwordController,
                   hintText: 'Enter your password',
-                  obscureText: !isPasswordVisible, 
+                  obscureText: !isPasswordVisible,
                   suffixIcon: IconButton(
                     icon: Icon(
                       isPasswordVisible
@@ -79,21 +92,22 @@ class LoginScreen extends ConsumerWidget {
                     },
                   ),
                 ),
+
                 const SizedBox(height: 12),
+
                 Align(
                   alignment: Alignment.centerRight,
                   child: TextButton(
-                    onPressed: () {
-                      // TODO: Implement Forgot Password functionality
-                    },
+                    onPressed: () {},
                     child: const Text(
                       'Forgot Password?',
                       style: TextStyle(color: Colors.black),
                     ),
                   ),
                 ),
+
                 const SizedBox(height: 20),
-                
+
                 if (state.errorMessage != null)
                   Padding(
                     padding: const EdgeInsets.only(bottom: 16.0),
@@ -108,16 +122,16 @@ class LoginScreen extends ConsumerWidget {
                       ),
                     ),
                   ),
-                
+
                 if (state.isLoading)
                   const Center(child: CircularProgressIndicator())
                 else
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
-                      onPressed: () => _login(ref), 
+                      onPressed: () => _login(ref),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.black, // PURE BLACK BUTTON
+                        backgroundColor: Colors.black,
                         padding: const EdgeInsets.symmetric(vertical: 18),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
@@ -129,10 +143,11 @@ class LoginScreen extends ConsumerWidget {
                       ),
                     ),
                   ),
+
                 const SizedBox(height: 30),
-                
+
                 _buildSocialLoginSection(ref, state.isLoading),
-                
+
                 const SizedBox(height: 30),
                 _buildBottomNavigation(context),
                 const SizedBox(height: 20),
@@ -143,8 +158,6 @@ class LoginScreen extends ConsumerWidget {
       ),
     );
   }
-
-  // --- UI Builder Methods ---
 
   Widget _buildTextField({
     required TextEditingController controller,
@@ -192,8 +205,8 @@ class LoginScreen extends ConsumerWidget {
         SizedBox(
           width: double.infinity,
           child: ElevatedButton.icon(
-            onPressed: isLoading ? null : () => _signInWithGoogle(ref), 
-            icon: Image.asset('assets/images/google_signlogo.png', height: 22.0),
+            onPressed: isLoading ? null : () => _signInWithGoogle(ref),
+            icon: Image.asset('assets/images/google_signlogo.png', height: 22),
             label: const Text('Sign in with Google'),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.white,
@@ -220,13 +233,15 @@ class LoginScreen extends ConsumerWidget {
           onPressed: () {
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => const RoleSelectionScreen()), 
+              MaterialPageRoute(
+                builder: (_) => const RoleSelectionScreen(),
+              ),
             );
           },
           child: const Text(
             'Register Now',
             style: TextStyle(
-              color: Color(0xFF2962FF), // Keeping primary color for the link
+              color: Color.fromARGB(255, 69, 171, 171),
               fontWeight: FontWeight.bold,
             ),
           ),

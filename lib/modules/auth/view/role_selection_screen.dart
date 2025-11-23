@@ -1,8 +1,8 @@
-// lib/modules/auth/view/role_selection_screen.dart (ALTERED - Pure White/B&W Theme)
+// lib/modules/auth/view/role_selection_screen.dart (WITH GIF)
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'trainer_registration_screen.dart'; 
+import 'trainer_registration_screen.dart';
 import 'learner_registration_screen.dart';
 
 class RoleSelectionScreen extends ConsumerWidget {
@@ -14,50 +14,65 @@ class RoleSelectionScreen extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('Select Your Role'),
         backgroundColor: Colors.white,
-        elevation: 1, // Keep a subtle elevation
-        foregroundColor: Colors.black, // Ensure title is black
+        elevation: 1,
+        foregroundColor: Colors.black,
       ),
-      backgroundColor: Colors.white, // 🔑 PURE WHITE BACKGROUND
+      backgroundColor: Colors.white,
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(24.0),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
+              
+              // 🔥 GIF ADDED HERE
+              SizedBox(
+                height: 280,
+                child: Image.asset(
+                  'assets/images/choice_10051268.gif',
+                  fit: BoxFit.contain,
+                ),
+              ),
+              const SizedBox(height: 50),
+
               const Text(
                 'Are you here to Teach or to Learn?',
                 style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 50),
-              
-              // 1. Trainer Role Selection Card
+
+              // Trainer card
               _buildRoleCard(
                 context,
                 role: 'Trainer',
                 description: 'Upload courses, manage content, and earn income.',
                 icon: Icons.school_outlined,
-                color: Colors.grey.shade50, // 🔑 LIGHT GRAY CARD COLOR
+                color: Colors.grey.shade50,
                 onTap: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => const TrainerRegistrationScreen()),
+                    MaterialPageRoute(
+                      builder: (context) => const TrainerRegistrationScreen(),
+                    ),
                   );
                 },
               ),
               const SizedBox(height: 30),
 
-              // 2. Learner Role Selection Card
+              // Learner card
               _buildRoleCard(
                 context,
                 role: 'Learner',
                 description: 'Explore courses, view lessons, and track progress.',
                 icon: Icons.book_online_outlined,
-                color: Colors.grey.shade100, // 🔑 SLIGHTLY DARKER LIGHT GRAY CARD COLOR
+                color: Colors.grey.shade100,
                 onTap: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => const LearnerRegistrationScreen()),
+                    MaterialPageRoute(
+                      builder: (context) => const LearnerRegistrationScreen(),
+                    ),
                   );
                 },
               ),
@@ -86,7 +101,7 @@ class RoleSelectionScreen extends ConsumerWidget {
           border: Border.all(color: Colors.grey.shade300, width: 1),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.1), // Slightly stronger shadow
+              color: Colors.black.withOpacity(0.1),
               blurRadius: 10,
               offset: const Offset(0, 5),
             ),
@@ -94,7 +109,7 @@ class RoleSelectionScreen extends ConsumerWidget {
         ),
         child: Row(
           children: [
-            Icon(icon, size: 40, color: Colors.black), // 🔑 BLACK ICON
+            Icon(icon, size: 40, color: Colors.black),
             const SizedBox(width: 20),
             Expanded(
               child: Column(
@@ -106,10 +121,13 @@ class RoleSelectionScreen extends ConsumerWidget {
                     style: const TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
-                      color: Colors.black, // 🔑 BLACK TEXT
+                      color: Colors.black,
                     ),
                   ),
-                  Text(description, style: TextStyle(color: Colors.grey.shade700)),
+                  Text(
+                    description,
+                    style: TextStyle(color: Colors.grey.shade700),
+                  ),
                 ],
               ),
             ),
