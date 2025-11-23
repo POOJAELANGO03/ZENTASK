@@ -1,4 +1,4 @@
-// lib/modules/course/view/course_edit_screen.dart (ALTERED - New Theme)
+// lib/modules/course/view/course_edit_screen.dart (ALTERED - New Theme + Delete Button)
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -55,6 +55,55 @@ class _CourseEditScreenState extends ConsumerState<CourseEditScreen> {
         );
         Navigator.pop(context); 
       }
+    }
+  }
+
+  // 🔴 NEW: Confirmation + delete logic
+  Future<void> _confirmAndDeleteCourse() async {
+    final state = ref.read(trainerCourseViewModelProvider);
+
+    if (state.isLoading) return;
+
+    final shouldDelete = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete Course'),
+        content: const Text(
+            'Are you sure you want to delete this course? All lessons will also be deleted.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text(
+              'Delete',
+              style: TextStyle(color: Colors.red),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldDelete != true) return;
+
+    final viewModel = ref.read(trainerCourseViewModelProvider.notifier);
+    await viewModel.deleteCourseListing(widget.course.id);
+
+    final newState = ref.read(trainerCourseViewModelProvider);
+
+    if (!mounted) return;
+
+    if (newState.errorMessage != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(newState.errorMessage!)),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Course deleted successfully!')),
+      );
+      Navigator.of(context).pop(); // close edit screen
     }
   }
 
@@ -125,13 +174,13 @@ class _CourseEditScreenState extends ConsumerState<CourseEditScreen> {
                       
                       // Button to navigate to the upload screen for THIS course
                       ElevatedButton.icon( // 🔑 CHANGED TO ELEVATEDBUTTON.ICON (SOLID LOOK)
-    onPressed: () {
-        // Navigate to the LessonUploadScreen to add new content
-        Navigator.push(context, MaterialPageRoute(
-            builder: (_) => LessonUploadScreen(courseId: widget.course.id),
-        ));
+                        onPressed: () {
+                          // Navigate to the LessonUploadScreen to add new content
+                          Navigator.push(context, MaterialPageRoute(
+                            builder: (_) => LessonUploadScreen(courseId: widget.course.id),
+                          ));
                         },
-                        icon: Icon(Icons.upload_file, color: const Color.fromARGB(255, 3, 3, 3)), // 🔑 NEW ICON COLOR
+                        icon: const Icon(Icons.upload_file, color: Color.fromARGB(255, 3, 3, 3)), // 🔑 NEW ICON COLOR
                         label: const Text('Add/Upload New Lesson', style: TextStyle(color: Color.fromARGB(255, 7, 7, 7))),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: primaryColor,
@@ -146,6 +195,7 @@ class _CourseEditScreenState extends ConsumerState<CourseEditScreen> {
               
               const SizedBox(height: 40),
 
+              // Save button
               ElevatedButton(
                 onPressed: state.isLoading ? null : _updateCourse,
                 style: ElevatedButton.styleFrom(
@@ -156,6 +206,21 @@ class _CourseEditScreenState extends ConsumerState<CourseEditScreen> {
                 child: state.isLoading
                     ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
                     : const Text('Save Changes', style: TextStyle(fontSize: 16, color: Color.fromARGB(255, 7, 7, 7))),
+              ),
+
+              const SizedBox(height: 12),
+
+              // 🔴 NEW: Delete button (separate color)
+              ElevatedButton(
+                onPressed: state.isLoading ? null : _confirmAndDeleteCourse,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: primaryColor,
+                  padding: const EdgeInsets.symmetric(vertical: 15),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+                child: state.isLoading
+                    ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                    : const Text('Delete Course', style: TextStyle(fontSize: 16, color: Color.fromARGB(255, 9, 9, 9))),
               ),
             ],
           ),
@@ -187,25 +252,26 @@ class _CourseEditScreenState extends ConsumerState<CourseEditScreen> {
         // 🔑 FIX 2: Border color set to primaryColor
         border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(10), 
-            borderSide: BorderSide(color: const Color.fromARGB(255, 9, 9, 9))
+            borderSide: const BorderSide(color: Color.fromARGB(255, 9, 9, 9))
         ),
         
         // 🔑 FIX 3: Focused Border color set to primaryColor
         focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(10), 
-            borderSide: BorderSide(color: const Color.fromARGB(255, 9, 9, 9), width: 2)
+            borderSide: const BorderSide(color: Color.fromARGB(255, 9, 9, 9), width: 2)
         ),
         
         // 🔑 FIX 4: Ensure UN-FOCUSED border is visible
         enabledBorder: OutlineInputBorder( 
             borderRadius: BorderRadius.circular(10), 
-            borderSide: BorderSide(color: const Color.fromARGB(255, 10, 10, 10), width: 1)
+            borderSide: const BorderSide(color: Color.fromARGB(255, 10, 10, 10), width: 1)
         ),
         
       ),
       // ... validator
     );
   }
+
   @override
   void dispose() {
     _titleController.dispose();

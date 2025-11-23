@@ -341,6 +341,27 @@ class TrainerCourseViewModel extends StateNotifier<TrainerCourseState> {
       state = state.copyWith(isLoading: false, errorMessage: 'Failed to update course: $e');
     }
   }
+
+  // 🔴 NEW: Delete course listing
+  Future<void> deleteCourseListing(String courseId) async {
+    state = state.copyWith(isLoading: true, errorMessage: null);
+
+    try {
+      await _courseService.deleteCourse(courseId);
+
+      // Remove it from local list so UI updates immediately
+      final updatedCourses =
+          state.trainerCourses.where((c) => c.id != courseId).toList();
+
+      state = state.copyWith(
+        isLoading: false,
+        trainerCourses: updatedCourses,
+      );
+    } catch (e) {
+      state = state.copyWith(
+          isLoading: false, errorMessage: 'Failed to delete course: $e');
+    }
+  }
 }
 
 // --- RIVERPOD PROVIDER (Unchanged) ---

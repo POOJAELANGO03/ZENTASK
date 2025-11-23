@@ -78,7 +78,7 @@ class _LessonUploadScreenState extends ConsumerState<LessonUploadScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Text('Upload to Course ID:', style: TextStyle(color: Colors.grey)),
+            const Text('Upload to Course ID:', style: TextStyle(color: Color.fromARGB(255, 80, 78, 78))),
             Text(widget.courseId, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black)),
             const SizedBox(height: 30),
 
@@ -90,25 +90,10 @@ class _LessonUploadScreenState extends ConsumerState<LessonUploadScreen> {
             ),
             const SizedBox(height: 20),
 
-            // 2. Preview Checkbox
-            Row(
-              children: [
-                Checkbox(
-                  value: _isPreviewable,
-                  onChanged: state.isLoading ? null : (bool? value) {
-                    setState(() { _isPreviewable = value ?? false; });
-                  },
-                  activeColor: primaryColor, // 🔑 NEW CHECKBOX COLOR
-                ),
-                const Text('Allow public preview?', style: TextStyle(color: Colors.black)),
-              ],
-            ),
-            const SizedBox(height: 20),
-
             // 3. File Picker Button
             OutlinedButton.icon(
               onPressed: state.isLoading ? null : () => ref.read(trainerCourseViewModelProvider.notifier).pickVideo(),
-              icon: Icon(Icons.videocam_outlined, color: primaryColor), // 🔑 NEW ICON COLOR
+              icon: Icon(Icons.videocam_outlined, color: const Color.fromARGB(255, 11, 11, 11)), // 🔑 NEW ICON COLOR
               label: Text(
                 state.selectedVideoFile == null 
                   ? 'Select Video File (MP4/MOV)'
@@ -117,6 +102,7 @@ class _LessonUploadScreenState extends ConsumerState<LessonUploadScreen> {
               ),
               style: OutlinedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 15),
+                backgroundColor: primaryColor,
                 side: BorderSide(color: primaryColor), // 🔑 NEW BORDER COLOR
               ),
             ),
@@ -128,7 +114,7 @@ class _LessonUploadScreenState extends ConsumerState<LessonUploadScreen> {
                 children: [
                   LinearProgressIndicator(
                     value: state.uploadProgress,
-                    backgroundColor: Colors.grey.shade300,
+                    backgroundColor: primaryColor,
                     valueColor: AlwaysStoppedAnimation<Color>(primaryColor), // 🔑 NEW PROGRESS COLOR
                     minHeight: 10,
                   ),
@@ -138,7 +124,7 @@ class _LessonUploadScreenState extends ConsumerState<LessonUploadScreen> {
               ),
             
             if (state.errorMessage != null && state.uploadProgress < 1.0)
-              Text('Error: ${state.errorMessage}', style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+              Text('Error: ${state.errorMessage}', style: const TextStyle(color: Color.fromARGB(255, 9, 9, 9), fontWeight: FontWeight.bold)),
 
             const SizedBox(height: 40),
 
@@ -146,13 +132,13 @@ class _LessonUploadScreenState extends ConsumerState<LessonUploadScreen> {
             ElevatedButton(
               onPressed: state.isLoading || state.selectedVideoFile == null ? null : _upload,
               style: ElevatedButton.styleFrom(
-                backgroundColor: primaryColor, // 🔑 NEW PRIMARY BUTTON COLOR
+                backgroundColor: primaryColor,// 🔑 NEW PRIMARY BUTTON COLOR
                 padding: const EdgeInsets.symmetric(vertical: 15),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
               ),
               child: state.isLoading
-                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                  : const Text('Upload & Save Lesson', style: TextStyle(fontSize: 16, color: Colors.white)),
+                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color:primaryColor, strokeWidth: 2))
+                  : const Text('Upload & Save Lesson', style: TextStyle(fontSize: 16, color: Color.fromARGB(255, 11, 11, 11))),
             ),
           ],
         ),

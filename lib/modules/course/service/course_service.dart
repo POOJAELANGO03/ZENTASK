@@ -1,4 +1,5 @@
-// lib/modules/course/service/course_service.dart (FINAL ALTERED CODE - Added logAccessRequest)
+// lib/modules/course/service/course_service.dart
+// (FINAL ALTERED CODE - Added logAccessRequest + deleteCourse + enrollLearner)
 
 import 'dart:io';
 import 'dart:convert';
@@ -13,7 +14,8 @@ class CourseService {
   
   final String _coursesCollection = 'courses';
   final String _lessonsSubcollection = 'lessons';
-  
+  final String _enrollmentsSubcollection = 'enrollments';
+
   // 1. Create a new course listing (metadata only)
   Future<String> createCourse(CourseModel course) async {
     final docRef = await _firestore.collection(_coursesCollection).add(course.toFirestore());
@@ -35,6 +37,26 @@ class CourseService {
       'category': category,
     });
   }
+
+  // 🔴 NEW: Delete course + its lessons
+  Future<void> deleteCourse(String courseId) async {
+    final courseRef =
+        _firestore.collection(_coursesCollection).doc(courseId);
+
+    // Delete all lessons in the subcollection
+    final lessonsSnapshot =
+        await courseRef.collection(_lessonsSubcollection).get();
+
+    final batch = _firestore.batch();
+    for (final doc in lessonsSnapshot.docs) {
+      batch.delete(doc.reference);
+    }
+
+    // Delete the course document itself
+    batch.delete(courseRef);
+
+    await batch.commit();
+  }
   
   // 3. Upload Video Lesson
   Future<void> uploadVideoAndAddLesson({
@@ -43,11 +65,15 @@ class CourseService {
     required File videoFile,
     required Function(double) onProgress, 
   }) async {
-    final lessonDocRef = _firestore.collection(_coursesCollection).doc(courseId).collection(_lessonsSubcollection).doc();
+    final lessonDocRef = _firestore
+        .collection(_coursesCollection)
+        .doc(courseId)
+        .collection(_lessonsSubcollection)
+        .doc();
+
     String publicId = lessonDocRef.id;
     
     // --- 1. CLOUDINARY UPLOAD ---
-    
     final uri = Uri.parse(CloudinaryConstants.UPLOAD_URL);
     var request = http.MultipartRequest('POST', uri)
       ..fields['upload_preset'] = CloudinaryConstants.UPLOAD_PRESET
@@ -57,7 +83,6 @@ class CourseService {
     onProgress(0.1); 
 
     final streamedResponse = await request.send();
-    
     final response = await http.Response.fromStream(streamedResponse); 
     
     onProgress(1.0); 
@@ -71,11 +96,10 @@ class CourseService {
     final int videoDuration = (responseData['duration'] as num?)?.toInt() ?? 0;
 
     // --- 2. FIRESTORE UPDATE ---
-    
     final finalLesson = lesson.copyWith(
-        id: lessonDocRef.id, 
-        storageUrl: secureUrl,
-        durationSeconds: videoDuration
+      id: lessonDocRef.id, 
+      storageUrl: secureUrl,
+      durationSeconds: videoDuration,
     );
 
     // Save lesson data to Firestore subcollection
@@ -103,17 +127,43 @@ class CourseService {
     return courses.fold(0, (sum, course) => sum + course.enrolledLearners);
   }
 
-  // 🔑 NEW IMPLEMENTATION: Log an access request for a course (Fix for Step 2)
+  // 🔑 Log an access request for a course (used by "Request Access" button)
   Future<void> logAccessRequest({
     required String courseId,
     required String learnerUid,
   }) async {
-    // We log the request in a separate collection 
     await _firestore.collection('access_requests').add({
       'courseId': courseId,
       'learnerUid': learnerUid,
       'status': 'Pending', // Trainer must manually approve/change this status
       'requestedAt': FieldValue.serverTimestamp(),
+    });
+  }
+
+  // 🔴 NEW: Real enrollment method (used by Simulated Payment)
+  Future<void> enrollLearner({
+    required String courseId,
+    required String learnerUid,
+  }) async {
+    final courseRef =
+        _firestore.collection(_coursesCollection).doc(courseId);
+    final enrollmentRef =
+        courseRef.collection(_enrollmentsSubcollection).doc(learnerUid);
+
+    await _firestore.runTransaction((transaction) async {
+      final enrollmentSnap = await transaction.get(enrollmentRef);
+
+      // Only enroll once per learner per course
+      if (!enrollmentSnap.exists) {
+        transaction.set(enrollmentRef, {
+          'learnerUid': learnerUid,
+          'enrolledAt': FieldValue.serverTimestamp(),
+        });
+
+        transaction.update(courseRef, {
+          'enrolledLearners': FieldValue.increment(1),
+        });
+      }
     });
   }
 

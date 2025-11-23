@@ -10,14 +10,14 @@ import '../../../providers.dart';
 import '../../auth/viewmodel/auth_state_view_model.dart';
 import '../service/course_service.dart';
 
-
 class CourseDetailScreen extends ConsumerWidget {
   final CourseModel course;
   const CourseDetailScreen({super.key, required this.course});
 
-  // 🔑 FIX: Helper method _showAccessDialog is now correctly defined as a method of the class
+  // 🔑 Helper method: Dialog for requesting/unlocking access
   void _showAccessDialog(BuildContext context, CourseModel course, WidgetRef ref) { 
-    final learnerUid = ref.read(authStateViewModelProvider).maybeWhen(
+    final learnerState = ref.read(authStateViewModelProvider);
+    final learnerUid = learnerState.maybeWhen(
       data: (user) => user?.uid,
       orElse: () => null,
     );
@@ -41,7 +41,6 @@ class CourseDetailScreen extends ConsumerWidget {
           TextButton(
             onPressed: () async {
               if (learnerUid != null) {
-                // Log the request to Firestore
                 await (courseService as CourseService).logAccessRequest(
                   courseId: course.id,
                   learnerUid: learnerUid,
@@ -61,13 +60,34 @@ class CourseDetailScreen extends ConsumerWidget {
           
           // 2. Simulated Payment Button
           ElevatedButton(
-            onPressed: () {
-              // Simulates payment and grants immediate access
-              ref.read(enrollmentProvider.notifier).unlockCourse(course.id);
-              Navigator.pop(context); 
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Course unlocked successfully! (Simulated Payment)')),
-              );
+            onPressed: () async {
+              if (learnerUid == null) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Error: Must be logged in to unlock this course.')),
+                );
+                return;
+              }
+
+              try {
+                // ✅ 1. Persist enrollment in Firestore
+                await (courseService as CourseService).enrollLearner(
+                  courseId: course.id,
+                  learnerUid: learnerUid,
+                );
+
+                // ✅ 2. Keep local unlock behavior (no UI change)
+                ref.read(enrollmentProvider.notifier).unlockCourse(course.id);
+
+                Navigator.pop(context); 
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Course unlocked successfully! (Simulated Payment)')),
+                );
+              } catch (e) {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Failed to unlock course: $e')),
+                );
+              }
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.black),
             child: const Text('Simulate Payment', style: TextStyle(color: Colors.white)),
@@ -83,19 +103,20 @@ class CourseDetailScreen extends ConsumerWidget {
       avatar: Icon(icon, size: 18, color: Colors.black),
       label: Text(text, style: const TextStyle(color: Colors.black)),
       backgroundColor: Colors.grey.shade100,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8), side: const BorderSide(color: Colors.black)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(8),
+        side: const BorderSide(color: Colors.black),
+      ),
     );
   }
   
-  // 🔑 FIX: build method is now clean and correctly implemented
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     // Watch the stream of lessons for this course ID
     final lessonsAsync = ref.watch(courseLessonsStreamProvider(course.id));
     
-    // Watch the set of actively enrolled course IDs
+    // Watch the set of actively enrolled course IDs (local unlock)
     final enrolledCourses = ref.watch(enrollmentProvider);
-    // 🔑 FIX: isCourseUnlocked variable is correctly defined and scoped
     final bool isCourseUnlocked = enrolledCourses.contains(course.id); 
 
     return Scaffold(
@@ -112,12 +133,18 @@ class CourseDetailScreen extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // --- 1. Course Metadata (About the Course) ---
-            const Text('About the Course', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black)),
+            const Text(
+              'About the Course',
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black),
+            ),
             const SizedBox(height: 8),
-            Text(course.description, style: TextStyle(fontSize: 16, color: Colors.grey.shade700)),
+            Text(
+              course.description,
+              style: TextStyle(fontSize: 16, color: Colors.grey.shade700),
+            ),
             const SizedBox(height: 20),
 
-            // --- 2. Key Information (FIXED OVERFLOW) ---
+            // --- 2. Key Information ---
             Wrap( 
               spacing: 10.0, 
               runSpacing: 10.0, 
@@ -130,7 +157,10 @@ class CourseDetailScreen extends ConsumerWidget {
             const SizedBox(height: 40),
 
             // --- 3. Course Outline (Lessons & Preview) ---
-            const Text('Course Outline', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black)),
+            const Text(
+              'Course Outline',
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black),
+            ),
             const SizedBox(height: 10),
 
             lessonsAsync.when(
@@ -151,43 +181,53 @@ class CourseDetailScreen extends ConsumerWidget {
                         ),
                         title: Text(lesson.title, style: const TextStyle(color: Colors.black)),
                         subtitle: Text(
-                          isPlayable ? 'Available | ${lesson.durationSeconds}s' : 'Locked Content',
-                          style: TextStyle(color: isPlayable ? Colors.black : Colors.grey.shade600),
+                          isPlayable
+                              ? 'Available | ${lesson.durationSeconds}s'
+                              : 'Locked Content',
+                          style: TextStyle(
+                            color: isPlayable ? Colors.black : Colors.grey.shade600,
+                          ),
                         ),
                         trailing: isPlayable 
                             ? const Icon(Icons.play_circle_outline, color: Colors.black)
                             : null,
                         onTap: isPlayable
                             ? () {
-                                // Navigate to Video Player Screen
-                                Navigator.push(context, MaterialPageRoute(
-                                  builder: (_) => VideoPlayerScreen(lesson: lesson),
-                                ));
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => VideoPlayerScreen(lesson: lesson),
+                                  ),
+                                );
                               }
-                            : null, // Locked lessons are not clickable
+                            : null,
                       );
                     }).toList(),
 
                     const SizedBox(height: 40),
                     
-                    // Unlock Course Button (Step 4)
+                    // Unlock Course Button
                     if (!isCourseUnlocked)
                       ElevatedButton(
                         onPressed: () {
-                          // FIX: Call the helper function with the required parameters
                           _showAccessDialog(context, course, ref); 
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.black,
                           padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
                         ),
-                        child: Text('Unlock Course for \$${course.price.toStringAsFixed(2)}', style: const TextStyle(fontSize: 18, color: Colors.white)),
+                        child: Text(
+                          'Unlock Course for \$${course.price.toStringAsFixed(2)}',
+                          style: const TextStyle(fontSize: 18, color: Colors.white),
+                        ),
                       )
                     else
                       const Text(
                         'Course successfully unlocked! View lessons above.', 
-                        style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold)
+                        style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold),
                       ),
                   ],
                 );
