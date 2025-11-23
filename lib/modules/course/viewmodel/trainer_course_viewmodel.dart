@@ -1,44 +1,43 @@
-// lib/modules/course/viewmodel/trainer_course_viewmodel.dart (FINAL CORRECTED CODE)
-
+// lib/modules/course/viewmodel/trainer_course_viewmodel.dart
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:image_picker/image_picker.dart'; 
+import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'dart:convert';
-import 'package:http/http.dart' as http; 
+import 'package:http/http.dart' as http;
 
 import '../../../providers.dart';
 import '../model/course_model.dart';
 import '../model/video_lesson_model.dart';
-import '../service/course_service.dart'; 
-import '../../auth/viewmodel/auth_state_view_model.dart'; 
+import '../service/course_service.dart';
+import '../../auth/viewmodel/auth_state_view_model.dart';
 import '../../../core/services/cloudinary_constants.dart';
-import '../../../core/services/auth_service.dart'; 
+import '../../../core/services/auth_service.dart';
 
-
-// --- STATE DEFINITION (FIXED: All Profile Fields Present) ---
+// -----------------------------------------------------
+// STATE
+// -----------------------------------------------------
 
 class TrainerCourseState {
   final bool isLoading;
   final String? errorMessage;
-  final List<CourseModel> trainerCourses; 
-  final String? currentCourseId; 
-  
-  // Profile Details
+  final List<CourseModel> trainerCourses;
+  final String? currentCourseId;
+
   final String displayName;
-  final String specialization; 
-  final String profileDetails; 
+  final String specialization;
+  final String profileDetails;
   final String phoneNumber;
   final String address;
   final String degree;
   final String profileImageUrl;
-  final File? selectedImageFile; 
-  
-  // Video Upload Fields
-  final int totalEnrollment; 
-  final double totalRevenueEstimate; 
+  final File? selectedImageFile;
+
+  final int totalEnrollment;
+  final double totalRevenueEstimate;
+
   final File? selectedVideoFile;
-  final double uploadProgress; 
+  final double uploadProgress;
 
   TrainerCourseState({
     this.isLoading = false,
@@ -48,18 +47,17 @@ class TrainerCourseState {
     this.displayName = '',
     this.specialization = '',
     this.profileDetails = '',
-    this.phoneNumber = '', 
-    this.address = '',     
-    this.degree = '',      
-    this.profileImageUrl = '', 
-    this.selectedImageFile, 
+    this.phoneNumber = '',
+    this.address = '',
+    this.degree = '',
+    this.profileImageUrl = '',
+    this.selectedImageFile,
     this.totalEnrollment = 0,
     this.totalRevenueEstimate = 0.0,
-    this.selectedVideoFile, 
+    this.selectedVideoFile,
     this.uploadProgress = 0.0,
   });
 
-  // 🔑 FIX: Corrected copyWith method signature and body to include ALL parameters
   TrainerCourseState copyWith({
     bool? isLoading,
     String? errorMessage,
@@ -76,53 +74,84 @@ class TrainerCourseState {
     double? uploadProgress,
     int? totalEnrollment,
     double? totalRevenueEstimate,
-    File? selectedVideoFile, // 🔑 FIX: Corrected video file parameter
+    File? selectedVideoFile,
   }) {
-    String? finalErrorMessage = errorMessage ?? this.errorMessage;
-    if (isLoading == false && (uploadProgress == 1.0 || errorMessage == null)) {
-        finalErrorMessage = null;
-    }
-
     return TrainerCourseState(
       isLoading: isLoading ?? this.isLoading,
-      errorMessage: finalErrorMessage,
+      errorMessage: errorMessage ?? this.errorMessage,
       trainerCourses: trainerCourses ?? this.trainerCourses,
-      currentCourseId: currentCourseId,
+      currentCourseId: currentCourseId ?? this.currentCourseId,
       displayName: displayName ?? this.displayName,
       specialization: specialization ?? this.specialization,
       profileDetails: profileDetails ?? this.profileDetails,
-      // Assigning new profile fields
       phoneNumber: phoneNumber ?? this.phoneNumber,
       address: address ?? this.address,
       degree: degree ?? this.degree,
       profileImageUrl: profileImageUrl ?? this.profileImageUrl,
-      selectedImageFile: selectedImageFile ?? this.selectedImageFile, 
+      selectedImageFile: selectedImageFile ?? this.selectedImageFile,
       uploadProgress: uploadProgress ?? this.uploadProgress,
       totalEnrollment: totalEnrollment ?? this.totalEnrollment,
       totalRevenueEstimate: totalRevenueEstimate ?? this.totalRevenueEstimate,
-      // 🔑 FIX: Correctly assigning selectedVideoFile
-      selectedVideoFile: selectedVideoFile ?? this.selectedVideoFile, 
+      selectedVideoFile: selectedVideoFile ?? this.selectedVideoFile,
     );
   }
 }
 
-// --- VIEWMODEL (STATENOTIFIER) ---
+// -----------------------------------------------------
+// VIEWMODEL
+// -----------------------------------------------------
 
 class TrainerCourseViewModel extends StateNotifier<TrainerCourseState> {
   final CourseService _courseService;
-  final AuthService _authService; 
-  final String? _currentTrainerUid;
-  final ImagePicker _picker = ImagePicker(); 
+  final AuthService _authService;
+  final String? _uid;
 
-  TrainerCourseViewModel(this._courseService, this._currentTrainerUid, this._authService) : super(TrainerCourseState()) {
-    if (_currentTrainerUid != null) {
-      listenToTrainerCourses(_currentTrainerUid!);
-      // TODO: Fetch existing profile data (phoneNumber, address, etc.) on load
+  final ImagePicker _picker = ImagePicker();
+
+  TrainerCourseViewModel(
+      this._courseService, this._uid, this._authService)
+      : super(TrainerCourseState()) {
+    if (_uid != null) {
+      listenToTrainerCourses(_uid!);
     }
   }
-  
+
   // -----------------------------------------------------
-  // 🔑 PROFILE MANAGEMENT (FIXED PARAMETER NAMES)
+  // PROFILE IMAGE PICKING
+  // -----------------------------------------------------
+
+  Future<void> pickProfileImage() async {
+    final file = await _picker.pickImage(source: ImageSource.gallery, imageQuality: 60);
+    if (file != null) {
+      state = state.copyWith(selectedImageFile: File(file.path));
+    }
+  }
+
+  // -----------------------------------------------------
+  // UPLOAD PROFILE IMAGE
+  // -----------------------------------------------------
+
+  Future<String> _uploadProfileImage(File file) async {
+    final req = http.MultipartRequest(
+      "POST",
+      Uri.parse(CloudinaryConstants.UPLOAD_URL),
+    );
+
+    req.fields['upload_preset'] = CloudinaryConstants.UPLOAD_PRESET;
+    req.fields['public_id'] = "trainer_profile_${_uid}";
+    req.files.add(await http.MultipartFile.fromPath("file", file.path));
+
+    final res = await http.Response.fromStream(await req.send());
+
+    if (res.statusCode != 200) {
+      throw Exception("Cloudinary Upload Failed: ${res.body}");
+    }
+
+    return jsonDecode(res.body)['secure_url'];
+  }
+
+  // -----------------------------------------------------
+  // SAVE PROFILE DETAILS
   // -----------------------------------------------------
 
   Future<void> saveProfileDetails({
@@ -133,20 +162,19 @@ class TrainerCourseViewModel extends StateNotifier<TrainerCourseState> {
     required String address,
     required String degree,
   }) async {
-    if (_currentTrainerUid == null) return;
+    if (_uid == null) return;
+
     state = state.copyWith(isLoading: true, errorMessage: null);
 
     try {
       String? imageUrl = state.profileImageUrl;
 
-      // 1. Upload new image if selected
       if (state.selectedImageFile != null) {
         imageUrl = await _uploadProfileImage(state.selectedImageFile!);
       }
 
-      // 2. Update Firestore document (AuthService method assumed fixed in Step 1)
       await _authService.updateProfileDetails(
-        uid: _currentTrainerUid!,
+        uid: _uid!,
         displayName: displayName,
         specialization: specialization,
         profileDetails: profileDetails,
@@ -156,8 +184,8 @@ class TrainerCourseViewModel extends StateNotifier<TrainerCourseState> {
         profileImageUrl: imageUrl,
       );
 
-      // 3. Update local state
       state = state.copyWith(
+        isLoading: false,
         displayName: displayName,
         specialization: specialization,
         profileDetails: profileDetails,
@@ -165,65 +193,27 @@ class TrainerCourseViewModel extends StateNotifier<TrainerCourseState> {
         address: address,
         degree: degree,
         profileImageUrl: imageUrl,
-        selectedImageFile: null, // Clear file after successful upload
-        isLoading: false,
+        selectedImageFile: null,
       );
     } catch (e) {
-      state = state.copyWith(isLoading: false, errorMessage: 'Failed to save profile: $e');
+      state = state.copyWith(isLoading: false, errorMessage: "$e");
     }
-  }
-  
-  Future<void> pickProfileImage() async {
-    // 🔑 FIX: Using correct parameter names
-    state = state.copyWith(errorMessage: null, selectedImageFile: null); 
-
-    try {
-      final XFile? file = await _picker.pickImage(source: ImageSource.gallery, imageQuality: 50);
-
-      if (file != null) {
-        state = state.copyWith(selectedImageFile: File(file.path)); // 🔑 FIX: Using correct parameter names
-      }
-    } catch (e) {
-      state = state.copyWith(errorMessage: 'Failed to pick image: $e');
-    }
-  }
-  
-  Future<String> _uploadProfileImage(File imageFile) async {
-    final uri = Uri.parse(CloudinaryConstants.UPLOAD_URL);
-    var request = http.MultipartRequest('POST', uri)
-      ..fields['upload_preset'] = CloudinaryConstants.UPLOAD_PRESET
-      ..fields['public_id'] = 'trainer_profile_${_currentTrainerUid}' 
-      ..files.add(await http.MultipartFile.fromPath('file', imageFile.path));
-
-    final streamedResponse = await request.send();
-    final response = await http.Response.fromStream(streamedResponse);
-    
-    if (response.statusCode != 200) {
-      throw Exception('Image Upload Failed: ${response.body}');
-    }
-
-    final Map<String, dynamic> responseData = json.decode(response.body);
-    return responseData['secure_url'];
   }
 
   // -----------------------------------------------------
-  // 🔑 VIDEO UPLOAD LOGIC (FIXED PARAMETER NAMES)
+  // VIDEO PICK
   // -----------------------------------------------------
-  
+
   Future<void> pickVideo() async {
-    // 🔑 FIX: Using correct parameter names
-    state = state.copyWith(errorMessage: null, selectedVideoFile: null); 
-
-    try {
-      final XFile? file = await _picker.pickVideo(source: ImageSource.gallery); 
-
-      if (file != null) {
-        state = state.copyWith(selectedVideoFile: File(file.path)); // 🔑 FIX: Using correct parameter names
-      }
-    } catch (e) {
-      state = state.copyWith(errorMessage: 'Failed to pick video: $e');
+    final file = await _picker.pickVideo(source: ImageSource.gallery);
+    if (file != null) {
+      state = state.copyWith(selectedVideoFile: File(file.path));
     }
   }
+
+  // -----------------------------------------------------
+  // VIDEO UPLOAD + LESSON SAVE
+  // -----------------------------------------------------
 
   Future<void> uploadLesson({
     required String courseId,
@@ -232,100 +222,89 @@ class TrainerCourseViewModel extends StateNotifier<TrainerCourseState> {
   }) async {
     final file = state.selectedVideoFile;
     if (file == null) {
-      state = state.copyWith(errorMessage: 'Please select a video file first.');
+      state = state.copyWith(errorMessage: "Select a video file first");
       return;
     }
-    
-    state = state.copyWith(isLoading: true, errorMessage: null, uploadProgress: 0.0);
+
+    state = state.copyWith(isLoading: true, uploadProgress: 0);
 
     try {
-      final newLesson = VideoLessonModel(
-        id: '', 
+      final lesson = VideoLessonModel(
+        id: "",
         title: title,
-        description: 'Uploaded by Trainer', 
-        durationSeconds: 0, 
-        storageUrl: '', 
+        description: "Uploaded Video",
+        durationSeconds: 0,
+        storageUrl: "",
         isPreviewable: isPreviewable,
       );
-      
+
       await _courseService.uploadVideoAndAddLesson(
         courseId: courseId,
-        lesson: newLesson,
+        lesson: lesson,
         videoFile: file,
-        onProgress: (progress) {
-          state = state.copyWith(uploadProgress: progress); 
+        onProgress: (p) {
+          state = state.copyWith(uploadProgress: p);
         },
       );
-      
-      // 🔑 FIX: Using correct parameter names
-      state = state.copyWith(isLoading: false, selectedVideoFile: null, uploadProgress: 1.0, errorMessage: 'Upload Complete!');
 
+      state = state.copyWith(
+        isLoading: false,
+        selectedVideoFile: null,
+        uploadProgress: 1.0,
+      );
     } catch (e) {
-      state = state.copyWith(isLoading: false, uploadProgress: 0.0, errorMessage: 'Upload failed: ${e.toString()}');
+      state = state.copyWith(
+        isLoading: false,
+        uploadProgress: 0,
+        errorMessage: "$e",
+      );
     }
   }
 
   // -----------------------------------------------------
-  // 🔑 EXISTING/RESTORED METHODS
+  // DELETE COURSE
   // -----------------------------------------------------
-  
-  void resetUploadState() {
-     // 🔑 FIX: Using correct parameter names
-     state = state.copyWith(
-      selectedVideoFile: null,
-      errorMessage: null,
-      uploadProgress: 0.0,
-      isLoading: false,
-    );
+
+  Future<void> deleteCourseListing(String id) async {
+    state = state.copyWith(isLoading: true);
+
+    try {
+      await _courseService.deleteCourse(id);
+      state = state.copyWith(
+          isLoading: false,
+          trainerCourses: state.trainerCourses.where((c) => c.id != id).toList());
+    } catch (e) {
+      state = state.copyWith(isLoading: false, errorMessage: "$e");
+    }
   }
 
-  void listenToTrainerCourses(String trainerUid) {
-    _courseService.getTrainerCourses(trainerUid).listen((courses) {
-      final int enrollment = _courseService.calculateTotalEnrollment(courses);
-      
+  // -----------------------------------------------------
+  // LISTEN TO COURSES
+  // -----------------------------------------------------
+
+  void listenToTrainerCourses(String uid) {
+    _courseService.getTrainerCourses(uid).listen((courses) {
+      final total = _courseService.calculateTotalEnrollment(courses);
+
       state = state.copyWith(
-          trainerCourses: courses, 
-          totalEnrollment: enrollment,
+        trainerCourses: courses,
+        totalEnrollment: total,
       );
-    }).onError((error) {
-       state = state.copyWith(errorMessage: 'Failed to fetch courses: $error');
     });
   }
 
-  Future<String?> createCourseListing({required String title, required String description, required double price, required String category}) async {
-    if (_currentTrainerUid == null) {
-      state = state.copyWith(errorMessage: 'Authentication error. Please log in again.');
-      return null;
-    }
-    
-    state = state.copyWith(isLoading: true, errorMessage: null);
+  // -----------------------------------------------------
+  // UPDATE COURSE
+  // -----------------------------------------------------
 
-    try {
-      final newCourse = CourseModel( 
-        id: '', 
-        trainerUid: _currentTrainerUid!,
-        title: title,
-        description: description,
-        price: price,
-        category: category,
-        lessonCount: 0,
-      );
-      
-      final courseId = await _courseService.createCourse(newCourse);
-      
-      state = state.copyWith(
-        isLoading: false,
-        currentCourseId: courseId, 
-      );
-      return courseId;
-    } catch (e) {
-      state = state.copyWith(isLoading: false, errorMessage: 'Failed to create course: $e');
-      return null;
-    }
-  }
-
-  Future<void> updateCourseListing({required String courseId, required String title, required String description, required double price, required String category}) async {
-    state = state.copyWith(isLoading: true, errorMessage: null);
+  Future<void> updateCourse({
+    required String courseId,
+    required String title,
+    required String description,
+    required double price,
+    required String category,
+  }) async {
+    state = state.copyWith(isLoading: true);
 
     try {
       await _courseService.updateCourse(
@@ -335,47 +314,84 @@ class TrainerCourseViewModel extends StateNotifier<TrainerCourseState> {
         price: price,
         category: category,
       );
-      
+
       state = state.copyWith(isLoading: false);
     } catch (e) {
-      state = state.copyWith(isLoading: false, errorMessage: 'Failed to update course: $e');
+      state = state.copyWith(isLoading: false, errorMessage: "$e");
     }
   }
 
-  // 🔴 NEW: Delete course listing
-  Future<void> deleteCourseListing(String courseId) async {
-    state = state.copyWith(isLoading: true, errorMessage: null);
+  // -----------------------------------------------------
+  // UI COMPATIBILITY WRAPPERS (VERY IMPORTANT)
+  // -----------------------------------------------------
 
-    try {
-      await _courseService.deleteCourse(courseId);
+  // COURSE CREATION SCREEN expects this ↓↓↓
+  Future<String?> createCourseListing({
+    required String title,
+    required String description,
+    required double price,
+    required String category,
+  }) async {
+    if (_uid == null) return null;
 
-      // Remove it from local list so UI updates immediately
-      final updatedCourses =
-          state.trainerCourses.where((c) => c.id != courseId).toList();
+    final course = CourseModel(
+      id: "",
+      trainerUid: _uid!,
+      title: title,
+      description: description,
+      price: price,
+      category: category,
+      lessonCount: 0,
+    );
 
-      state = state.copyWith(
-        isLoading: false,
-        trainerCourses: updatedCourses,
-      );
-    } catch (e) {
-      state = state.copyWith(
-          isLoading: false, errorMessage: 'Failed to delete course: $e');
-    }
+    final id = await _courseService.createCourse(course);
+
+    state = state.copyWith(currentCourseId: id);
+    return id;
+  }
+
+  // COURSE EDIT SCREEN uses this ↓↓↓
+  Future<void> updateCourseListing({
+    required String courseId,
+    required String title,
+    required String description,
+    required double price,
+    required String category,
+  }) {
+    return updateCourse(
+      courseId: courseId,
+      title: title,
+      description: description,
+      price: price,
+      category: category,
+    );
+  }
+
+  // LESSON UPLOAD SCREEN expects this ↓↓↓
+  void resetUploadState() {
+    state = state.copyWith(
+      selectedVideoFile: null,
+      uploadProgress: 0.0,
+      errorMessage: null,
+      isLoading: false,
+    );
   }
 }
 
-// --- RIVERPOD PROVIDER (Unchanged) ---
+// -----------------------------------------------------
+// PROVIDER
+// -----------------------------------------------------
 
 final trainerCourseViewModelProvider =
     StateNotifierProvider<TrainerCourseViewModel, TrainerCourseState>((ref) {
-  final courseService = ref.watch(courseServiceProvider);
-  final authService = ref.watch(firebaseAuthServiceProvider); 
+  final courseSvc = ref.watch(courseServiceProvider);
+  final authSvc = ref.watch(firebaseAuthServiceProvider) as AuthService;
   final authData = ref.watch(authStateViewModelProvider);
-  
-  String? trainerUid = authData.maybeWhen(
-    data: (userModel) => userModel?.uid,
+
+  final uid = authData.maybeWhen(
+    data: (u) => u?.uid,
     orElse: () => null,
   );
-  
-  return TrainerCourseViewModel(courseService, trainerUid, authService as AuthService);
+
+  return TrainerCourseViewModel(courseSvc, uid, authSvc);
 });

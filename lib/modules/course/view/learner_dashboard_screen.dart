@@ -1,5 +1,3 @@
-
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../providers.dart';
@@ -11,6 +9,11 @@ import 'video_player_screen.dart';
 import '../viewmodel/progress_provider.dart';
 import '../viewmodel/enrollment_provider.dart';
 import '../model/video_lesson_model.dart';
+import 'learner_profile_screen.dart';
+
+// THEME (same as trainer)
+const Color primaryColor = Color(0xFF9ECAD6);
+const Color backgroundColor = Color(0xFFE9E3DF);
 
 // ===============================================================
 // 1. WRAPPER DASHBOARD WITH BOTTOM NAVIGATION
@@ -29,15 +32,17 @@ class _LearnerDashboardScreenState
   int _currentIndex = 0;
   final TextEditingController _searchController = TextEditingController();
 
-  final List<Widget> _screens = [
-    const LearnerCourseExplorerView(),
-    const LearnerEnrolledCoursesView(),
-  ];
+  late final List<Widget> _screens;
 
   @override
   void initState() {
     super.initState();
     _searchController.addListener(_onSearchChanged);
+    _screens = const [
+      LearnerCourseExplorerView(),
+      LearnerEnrolledCoursesView(),
+      LearnerProfileScreen(), // NEW PROFILE TAB
+    ];
   }
 
   void _onSearchChanged() {
@@ -49,17 +54,17 @@ class _LearnerDashboardScreenState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
-
+      backgroundColor: backgroundColor,
       body: _screens[_currentIndex],
 
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
         onTap: (i) => setState(() => _currentIndex = i),
-        backgroundColor: Colors.white,
-        selectedItemColor: Colors.black,
-        unselectedItemColor: Colors.grey.shade600,
+        backgroundColor: primaryColor,
+        selectedItemColor: const Color.fromARGB(255, 9, 9, 9),
+        unselectedItemColor: const Color.fromARGB(255, 85, 84, 84),
         type: BottomNavigationBarType.fixed,
+        elevation: 5,
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.explore_outlined),
@@ -68,6 +73,10 @@ class _LearnerDashboardScreenState
           BottomNavigationBarItem(
             icon: Icon(Icons.library_books_outlined),
             label: "My Courses",
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person_outline),
+            label: "Profile",
           ),
         ],
       ),
@@ -90,8 +99,10 @@ class LearnerCourseExplorerView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final parent = context.findAncestorStateOfType<_LearnerDashboardScreenState>();
-    final searchController = parent?._searchController ?? TextEditingController();
+    final parent =
+        context.findAncestorStateOfType<_LearnerDashboardScreenState>();
+    final searchController =
+        parent?._searchController ?? TextEditingController();
 
     final state = ref.watch(learnerCourseViewModelProvider);
     final filteredCourses =
@@ -105,10 +116,13 @@ class LearnerCourseExplorerView extends ConsumerWidget {
     return CustomScrollView(
       slivers: [
         SliverAppBar(
-          title: const Text("COURSEHIVE",
-              style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+          title: const Text(
+            "COURSEHIVE",
+            style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+          ),
           pinned: true,
-          backgroundColor: Colors.white,
+          backgroundColor: primaryColor,
+          elevation: 1,
           actions: [
             IconButton(
               icon: const Icon(Icons.filter_list, color: Colors.black),
@@ -120,7 +134,8 @@ class LearnerCourseExplorerView extends ConsumerWidget {
             ),
             IconButton(
               icon: const Icon(Icons.logout, color: Colors.black),
-              onPressed: () => ref.read(firebaseAuthServiceProvider).signOut(),
+              onPressed: () =>
+                  ref.read(firebaseAuthServiceProvider).signOut(),
             ),
           ],
         ),
@@ -133,32 +148,53 @@ class LearnerCourseExplorerView extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text("Hello, $learnerName!",
-                      style: const TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black)),
+                  Text(
+                    "Hello, $learnerName!",
+                    style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
+                  ),
                   const SizedBox(height: 20),
 
                   TextField(
                     controller: searchController,
                     decoration: InputDecoration(
                       hintText: "Search courses...",
-                      prefixIcon: const Icon(Icons.search, color: Colors.black),
+                      prefixIcon:
+                          const Icon(Icons.search, color: Colors.black),
+                      filled: true,
+                      fillColor: Colors.white,
                       border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                          borderSide: const BorderSide(color: Colors.black)),
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide:
+                            const BorderSide(color: Colors.black, width: 1),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide:
+                            const BorderSide(color: Colors.black, width: 1),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide:
+                            const BorderSide(color: Colors.black, width: 2),
+                      ),
                     ),
                   ),
                   const SizedBox(height: 20),
 
-                  const Text("Available Courses",
-                      style:
-                          TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                  const Text(
+                    "Available Courses",
+                    style:
+                        TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
                   const SizedBox(height: 10),
 
                   if (state.isLoading)
-                    const Center(child: CircularProgressIndicator())
+                    const Center(
+                        child: CircularProgressIndicator(color: Colors.black))
                   else if (state.errorMessage != null)
                     Center(child: Text(state.errorMessage!))
                   else if (filteredCourses.isEmpty)
@@ -177,18 +213,25 @@ class LearnerCourseExplorerView extends ConsumerWidget {
 
   Widget _buildCourseCard(BuildContext context, CourseModel course) {
     return Card(
+      color: Colors.white,
       margin: const EdgeInsets.only(bottom: 15),
       shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
-          side: const BorderSide(color: Colors.black)),
+        borderRadius: BorderRadius.circular(10),
+        side: const BorderSide(color: primaryColor),
+      ),
       child: ListTile(
-        leading: const Icon(Icons.menu_book, color: Colors.black),
-        title: Text(course.title),
+        leading: const Icon(Icons.menu_book, color: primaryColor),
+        title: Text(
+          course.title,
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
         subtitle: Text("${course.category} | ₹${course.price}"),
         trailing: const Icon(Icons.arrow_forward_ios, size: 16),
         onTap: () => Navigator.push(
           context,
-          MaterialPageRoute(builder: (_) => CourseDetailScreen(course: course)),
+          MaterialPageRoute(
+            builder: (_) => CourseDetailScreen(course: course),
+          ),
         ),
       ),
     );
@@ -232,9 +275,11 @@ class LearnerEnrolledCoursesView extends ConsumerWidget {
               "Completed: $completed | Pending: $pending | Total: $total | Progress: $percent%",
               style: const TextStyle(color: Colors.grey),
             ),
-            trailing: const Icon(Icons.play_circle_fill, color: Colors.black),
+            trailing:
+                const Icon(Icons.play_circle_fill, color: Colors.black),
             onTap: () async {
-              final lessonsList = await viewModel.getLessonsForCourse(course.id);
+              final lessonsList =
+                  await viewModel.getLessonsForCourse(course.id);
               if (lessonsList.isNotEmpty) {
                 Navigator.push(
                   context,
@@ -251,12 +296,15 @@ class LearnerEnrolledCoursesView extends ConsumerWidget {
     }
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: backgroundColor,
       appBar: AppBar(
-        title:
-            const Text("My Active Courses", style: TextStyle(color: Colors.black)),
-        backgroundColor: Colors.white,
+        title: const Text(
+          "My Active Courses",
+          style: TextStyle(color: Colors.black),
+        ),
+        backgroundColor: primaryColor,
         elevation: 1,
+        iconTheme: const IconThemeData(color: Colors.black),
       ),
       body: enrolledCourses.isEmpty
           ? const Center(child: Text("No enrolled courses"))
@@ -320,8 +368,10 @@ class _FilterModalContentState extends ConsumerState<FilterModalContent> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text("Filter Courses",
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+          const Text(
+            "Filter Courses",
+            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+          ),
           const SizedBox(height: 10),
 
           // PRICE SLIDER
@@ -351,14 +401,18 @@ class _FilterModalContentState extends ConsumerState<FilterModalContent> {
             children: [
               TextButton(
                 onPressed: _resetFilters,
-                child: const Text("Reset", style: TextStyle(color: Colors.red)),
+                child: const Text("Reset",
+                    style: TextStyle(color: Colors.red)),
               ),
               ElevatedButton(
                 onPressed: _applyFilters,
-                style:
-                    ElevatedButton.styleFrom(backgroundColor: Colors.black),
-                child:
-                    const Text("Apply Filters", style: TextStyle(color: Colors.white)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.black,
+                ),
+                child: const Text(
+                  "Apply Filters",
+                  style: TextStyle(color: Colors.white),
+                ),
               )
             ],
           )
