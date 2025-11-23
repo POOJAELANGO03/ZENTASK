@@ -1,4 +1,4 @@
-// lib/modules/course/view/trainer_dashboard_screen.dart (FINAL INTEGRATED CODE)
+// lib/modules/course/view/trainer_dashboard_screen.dart (ALTERED - New Theme & Inversions)
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -10,6 +10,12 @@ import '../model/course_model.dart';
 import 'course_creation_screen.dart'; 
 import 'course_edit_screen.dart'; 
 import 'trainer_profile_screen.dart'; 
+import '../viewmodel/progress_provider.dart';
+import '../model/video_lesson_model.dart'; 
+
+// 🔑 New Theme Colors
+const Color primaryColor = Color(0xFF9ECAD6);
+const Color backgroundColor = Color(0xFFE9E3DF);
 
 // --- 1. Dashboard Wrapper (Stateful for Navigation) ---
 
@@ -33,7 +39,7 @@ class _TrainerDashboardScreenState extends ConsumerState<TrainerDashboardScreen>
     ];
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: backgroundColor, // 🔑 NEW SCAFFOLD BACKGROUND
       
       body: _screens[_currentIndex], 
       
@@ -43,14 +49,15 @@ class _TrainerDashboardScreenState extends ConsumerState<TrainerDashboardScreen>
               onPressed: () {
                 Navigator.push(context, MaterialPageRoute(builder: (_) => const CourseCreationScreen())); 
               },
+              // 🔑 FAB Color Inversion: Black text/icon on Soft Teal background
               label: const Text('New Course', style: TextStyle(color: Colors.black)), 
               icon: const Icon(Icons.add, color: Colors.black), 
-              backgroundColor: Colors.white, 
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10), side: const BorderSide(color: Colors.black, width: 1.5)), 
+              backgroundColor: primaryColor, 
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10), side: BorderSide(color: primaryColor, width: 1.5)), 
             )
           : null,
       
-      // Bottom Navigation Bar Implementation (White Background)
+      // Bottom Navigation Bar Implementation
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
         onTap: (index) {
@@ -58,9 +65,9 @@ class _TrainerDashboardScreenState extends ConsumerState<TrainerDashboardScreen>
             _currentIndex = index;
           });
         },
-        backgroundColor: Colors.white, 
-        selectedItemColor: Colors.black, 
-        unselectedItemColor: Colors.grey.shade600, 
+        backgroundColor: primaryColor, 
+        selectedItemColor: Colors.black, // 🔑 NEW SELECTED COLOR
+        unselectedItemColor: const Color.fromARGB(255, 79, 78, 78), 
         type: BottomNavigationBarType.fixed, 
         elevation: 5,
         items: const [
@@ -105,7 +112,7 @@ class TrainerDashboardView extends ConsumerWidget {
       decoration: BoxDecoration(
         color: Colors.white, 
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.black),
+        border: Border.all(color: primaryColor), // 🔑 NEW BORDER COLOR
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -122,13 +129,13 @@ class TrainerDashboardView extends ConsumerWidget {
     return Card(
       color: Colors.white,
       elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10), side: const BorderSide(color: Colors.black)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10), side: BorderSide(color: primaryColor)), // 🔑 NEW BORDER COLOR
       margin: const EdgeInsets.only(bottom: 15),
       child: ListTile(
-        leading: const Icon(Icons.view_list_sharp, color: Colors.black),
+        leading: Icon(Icons.view_list_sharp, color: primaryColor), // 🔑 NEW ICON COLOR
         title: Text(course.title, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black)),
         subtitle: Text('${course.category} | ${course.lessonCount} Lessons', style: TextStyle(color: Colors.grey.shade700)),
-        trailing: const Icon(Icons.edit, color: Colors.black), 
+        trailing: Icon(Icons.edit, color: primaryColor), // 🔑 NEW ICON COLOR
         onTap: () {
           Navigator.push(
             context,
@@ -155,9 +162,9 @@ class TrainerDashboardView extends ConsumerWidget {
         SliverAppBar(
           title: const Text('COURSEHIVE', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black)),
           pinned: true,
-          backgroundColor: Colors.white,
+          backgroundColor: primaryColor, // 🔑 NEW APP BAR COLOR
           elevation: 1,
-          actions: const [
+          actions: [
             // Logout button is intentionally absent from App Bar
           ],
         ),
@@ -220,9 +227,9 @@ class TrainerStatsView extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.grey.shade50, 
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: color, width: 2),
+        color: Colors.white, 
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color, width: 2), // Uses accent color for border
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -232,7 +239,7 @@ class TrainerStatsView extends ConsumerWidget {
             children: [
               Text(title, style: const TextStyle(fontSize: 16, color: Colors.black)),
               const SizedBox(height: 8),
-              Text(value, style: const TextStyle(fontSize: 34, fontWeight: FontWeight.bold, color: Colors.black)),
+              Text(value, style: const TextStyle(fontSize: 34, fontWeight: FontWeight.w900, color: Colors.black)),
             ],
           ),
           Icon(icon, size: 40, color: color),
@@ -277,17 +284,16 @@ class TrainerStatsView extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(trainerCourseViewModelProvider);
     
-    // 🔑 Neutral Accent Color for B&W compliance
-    const Color neutralAccent = Colors.black; 
+    const Color accentColor = primaryColor; // Use the primary color for stats accent
     
     return Scaffold(
+      backgroundColor: backgroundColor, // 🔑 NEW BACKGROUND
       appBar: AppBar(
         title: const Text('Statistics & Analytics', style: TextStyle(color: Colors.black)),
-        backgroundColor: Colors.white, 
+        backgroundColor: primaryColor, // 🔑 NEW APP BAR COLOR
         elevation: 1,
         iconTheme: const IconThemeData(color: Colors.black), 
       ),
-      backgroundColor: Colors.white,
       body: state.isLoading
           ? const Center(child: CircularProgressIndicator(color: Colors.black))
           : SingleChildScrollView(
@@ -303,7 +309,7 @@ class TrainerStatsView extends ConsumerWidget {
                     title: 'Total Enrollments',
                     value: state.totalEnrollment.toString(),
                     icon: Icons.group_add_outlined,
-                    color: neutralAccent, 
+                    color: accentColor, 
                   ),
                   const SizedBox(height: 15),
 
@@ -312,7 +318,7 @@ class TrainerStatsView extends ConsumerWidget {
                     title: 'Active Courses',
                     value: state.trainerCourses.length.toString(),
                     icon: Icons.view_list_sharp,
-                    color: Colors.black, 
+                    color: accentColor, 
                   ),
                   const SizedBox(height: 40),
 
@@ -330,7 +336,7 @@ class TrainerStatsView extends ConsumerWidget {
                         course: course,
                         enrollment: course.enrolledLearners,
                         completionRate: completionRate,
-                        color: neutralAccent,
+                        color: accentColor,
                       );
                     }).toList(),
                 ],

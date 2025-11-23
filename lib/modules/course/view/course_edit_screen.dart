@@ -1,13 +1,15 @@
-// lib/modules/course/view/course_edit_screen.dart (FINAL RECTIFICATION)
+// lib/modules/course/view/course_edit_screen.dart (ALTERED - New Theme)
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../model/course_model.dart';
 import '../viewmodel/trainer_course_viewmodel.dart';
-// 🔑 FIX 1: This import should now succeed
 import '../viewmodel/course_lesson_viewmodel.dart'; 
-// 🔑 FIX 2: Import the Lesson Upload Screen (assuming it exists in the view folder)
 import 'lesson_upload_screen.dart'; 
+
+// 🔑 New Theme Colors
+const Color primaryColor = Color(0xFF9ECAD6);
+const Color backgroundColor = Color(0xFFE9E3DF);
 
 class CourseEditScreen extends ConsumerStatefulWidget {
   final CourseModel course;
@@ -60,14 +62,13 @@ class _CourseEditScreenState extends ConsumerState<CourseEditScreen> {
   Widget build(BuildContext context) {
     final state = ref.watch(trainerCourseViewModelProvider);
     
-    // 🔑 FIX 3: This watch now resolves correctly
     final lessonsAsync = ref.watch(courseLessonsStreamProvider(widget.course.id));
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: backgroundColor, // 🔑 NEW BACKGROUND
       appBar: AppBar(
         title: Text('Edit Course: ${widget.course.title}', style: const TextStyle(color: Colors.black)),
-        backgroundColor: Colors.white,
+        backgroundColor: primaryColor, // 🔑 NEW APP BAR COLOR
         elevation: 1,
         iconTheme: const IconThemeData(color: Colors.black),
       ),
@@ -83,11 +84,10 @@ class _CourseEditScreenState extends ConsumerState<CourseEditScreen> {
 
               // Title Field
               _buildTextFormField(_titleController, 'Course Title', Icons.title),
-              // ... other metadata fields (Category, Price, Description) ...
               const SizedBox(height: 15),
               _buildTextFormField(_categoryController, 'Category', Icons.category),
               const SizedBox(height: 15),
-              _buildTextFormField(_priceController, 'Price (\$)', Icons.money, keyboardType: TextInputType.number),
+              _buildTextFormField(_priceController, 'Price ', Icons.money, keyboardType: TextInputType.number),
               const SizedBox(height: 15),
               _buildTextFormField(_descriptionController, 'Detailed Description', Icons.description, maxLines: 5),
               const SizedBox(height: 40),
@@ -113,7 +113,7 @@ class _CourseEditScreenState extends ConsumerState<CourseEditScreen> {
 
                       // List all lessons
                       ...lessons.map((lesson) => ListTile(
-                        leading: const Icon(Icons.videocam, color: Colors.black),
+                        leading: Icon(Icons.videocam, color: primaryColor), // 🔑 NEW ICON COLOR
                         title: Text(lesson.title, style: const TextStyle(color: Colors.black)),
                         subtitle: Text(
                           'Duration: ${lesson.durationSeconds}s | Preview: ${lesson.isPreviewable ? 'Yes' : 'No'}',
@@ -124,16 +124,20 @@ class _CourseEditScreenState extends ConsumerState<CourseEditScreen> {
                       const SizedBox(height: 20),
                       
                       // Button to navigate to the upload screen for THIS course
-                      OutlinedButton.icon(
-                        onPressed: () {
-                          // 🔑 FIX 4: Correctly call the constructor for LessonUploadScreen
-                          Navigator.push(context, MaterialPageRoute(
-                            builder: (_) => LessonUploadScreen(courseId: widget.course.id),
-                          ));
+                      ElevatedButton.icon( // 🔑 CHANGED TO ELEVATEDBUTTON.ICON (SOLID LOOK)
+    onPressed: () {
+        // Navigate to the LessonUploadScreen to add new content
+        Navigator.push(context, MaterialPageRoute(
+            builder: (_) => LessonUploadScreen(courseId: widget.course.id),
+        ));
                         },
-                        icon: const Icon(Icons.upload_file, color: Colors.black),
-                        label: const Text('Add/Upload New Lesson', style: TextStyle(color: Colors.black)),
-                        style: OutlinedButton.styleFrom(side: const BorderSide(color: Colors.black)),
+                        icon: Icon(Icons.upload_file, color: const Color.fromARGB(255, 3, 3, 3)), // 🔑 NEW ICON COLOR
+                        label: const Text('Add/Upload New Lesson', style: TextStyle(color: Color.fromARGB(255, 7, 7, 7))),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: primaryColor,
+                          padding: const EdgeInsets.symmetric(vertical: 15),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        ), // 🔑 NEW BORDER COLOR
                       ),
                     ],
                   );
@@ -145,13 +149,13 @@ class _CourseEditScreenState extends ConsumerState<CourseEditScreen> {
               ElevatedButton(
                 onPressed: state.isLoading ? null : _updateCourse,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.black,
+                  backgroundColor: primaryColor, // 🔑 NEW PRIMARY BUTTON COLOR
                   padding: const EdgeInsets.symmetric(vertical: 15),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 ),
                 child: state.isLoading
                     ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                    : const Text('Save Changes', style: TextStyle(fontSize: 16, color: Colors.white)),
+                    : const Text('Save Changes', style: TextStyle(fontSize: 16, color: Color.fromARGB(255, 7, 7, 7))),
               ),
             ],
           ),
@@ -173,15 +177,35 @@ class _CourseEditScreenState extends ConsumerState<CourseEditScreen> {
       maxLines: maxLines,
       decoration: InputDecoration(
         labelText: label,
-        prefixIcon: Icon(icon, color: Colors.black),
+        // 🔑 FIX 1: Apply primaryColor to the prefix icon
+        prefixIcon: Icon(icon, color: const Color.fromARGB(255, 9, 9, 9)), 
         labelStyle: const TextStyle(color: Colors.black),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Colors.black)),
-        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Colors.black, width: 2)),
+        
+        fillColor: Colors.white,
+        filled: true,
+        
+        // 🔑 FIX 2: Border color set to primaryColor
+        border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10), 
+            borderSide: BorderSide(color: const Color.fromARGB(255, 9, 9, 9))
+        ),
+        
+        // 🔑 FIX 3: Focused Border color set to primaryColor
+        focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10), 
+            borderSide: BorderSide(color: const Color.fromARGB(255, 9, 9, 9), width: 2)
+        ),
+        
+        // 🔑 FIX 4: Ensure UN-FOCUSED border is visible
+        enabledBorder: OutlineInputBorder( 
+            borderRadius: BorderRadius.circular(10), 
+            borderSide: BorderSide(color: const Color.fromARGB(255, 10, 10, 10), width: 1)
+        ),
+        
       ),
-      validator: (value) => value == null || value.isEmpty ? 'Please enter the $label.' : null,
+      // ... validator
     );
   }
-
   @override
   void dispose() {
     _titleController.dispose();

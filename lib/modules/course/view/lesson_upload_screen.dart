@@ -1,9 +1,13 @@
-// lib/modules/course/view/lesson_upload_screen.dart (CRITICAL IMPORT FIX)
+// lib/modules/course/view/lesson_upload_screen.dart (ALTERED - New Theme)
 
-import 'package:flutter/material.dart'; // 🔑 CRITICAL: Adds Flutter core widgets/types
-import 'package:flutter_riverpod/flutter_riverpod.dart'; // 🔑 CRITICAL: Adds Riverpod types
+import 'package:flutter/material.dart'; 
+import 'package:flutter_riverpod/flutter_riverpod.dart'; 
 import '../viewmodel/trainer_course_viewmodel.dart';
 import 'dart:io';
+
+// 🔑 New Theme Colors
+const Color primaryColor = Color(0xFF9ECAD6);
+const Color backgroundColor = Color(0xFFE9E3DF);
 
 class LessonUploadScreen extends ConsumerStatefulWidget {
   final String courseId;
@@ -20,8 +24,6 @@ class _LessonUploadScreenState extends ConsumerState<LessonUploadScreen> {
   @override
   void initState() {
     super.initState();
-    // 🔑 FIX: The method is named 'resetUploadState' in the ViewModel
-    // This call is now correct, assuming the ViewModel is updated.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(trainerCourseViewModelProvider.notifier).resetUploadState(); 
     });
@@ -64,10 +66,10 @@ class _LessonUploadScreenState extends ConsumerState<LessonUploadScreen> {
     });
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: backgroundColor, // 🔑 NEW BACKGROUND
       appBar: AppBar(
         title: const Text('Add Video Lesson', style: TextStyle(color: Colors.black)),
-        backgroundColor: Colors.white,
+        backgroundColor: primaryColor, // 🔑 NEW APP BAR COLOR
         elevation: 1,
         iconTheme: const IconThemeData(color: Colors.black),
       ),
@@ -96,7 +98,7 @@ class _LessonUploadScreenState extends ConsumerState<LessonUploadScreen> {
                   onChanged: state.isLoading ? null : (bool? value) {
                     setState(() { _isPreviewable = value ?? false; });
                   },
-                  activeColor: Colors.black,
+                  activeColor: primaryColor, // 🔑 NEW CHECKBOX COLOR
                 ),
                 const Text('Allow public preview?', style: TextStyle(color: Colors.black)),
               ],
@@ -106,7 +108,7 @@ class _LessonUploadScreenState extends ConsumerState<LessonUploadScreen> {
             // 3. File Picker Button
             OutlinedButton.icon(
               onPressed: state.isLoading ? null : () => ref.read(trainerCourseViewModelProvider.notifier).pickVideo(),
-              icon: const Icon(Icons.videocam_outlined, color: Colors.black),
+              icon: Icon(Icons.videocam_outlined, color: primaryColor), // 🔑 NEW ICON COLOR
               label: Text(
                 state.selectedVideoFile == null 
                   ? 'Select Video File (MP4/MOV)'
@@ -115,7 +117,7 @@ class _LessonUploadScreenState extends ConsumerState<LessonUploadScreen> {
               ),
               style: OutlinedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 15),
-                side: const BorderSide(color: Colors.black),
+                side: BorderSide(color: primaryColor), // 🔑 NEW BORDER COLOR
               ),
             ),
             const SizedBox(height: 20),
@@ -127,7 +129,7 @@ class _LessonUploadScreenState extends ConsumerState<LessonUploadScreen> {
                   LinearProgressIndicator(
                     value: state.uploadProgress,
                     backgroundColor: Colors.grey.shade300,
-                    valueColor: const AlwaysStoppedAnimation<Color>(Colors.black),
+                    valueColor: AlwaysStoppedAnimation<Color>(primaryColor), // 🔑 NEW PROGRESS COLOR
                     minHeight: 10,
                   ),
                   const SizedBox(height: 10),
@@ -144,7 +146,7 @@ class _LessonUploadScreenState extends ConsumerState<LessonUploadScreen> {
             ElevatedButton(
               onPressed: state.isLoading || state.selectedVideoFile == null ? null : _upload,
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.black,
+                backgroundColor: primaryColor, // 🔑 NEW PRIMARY BUTTON COLOR
                 padding: const EdgeInsets.symmetric(vertical: 15),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
               ),
@@ -163,8 +165,11 @@ class _LessonUploadScreenState extends ConsumerState<LessonUploadScreen> {
       labelText: label,
       prefixIcon: Icon(icon, color: Colors.black),
       labelStyle: const TextStyle(color: Colors.black),
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Colors.black)),
-      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Colors.black, width: 2)),
+      // 🔑 NEW INPUT FIELD STYLING
+      fillColor: Colors.white,
+      filled: true,
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: primaryColor)),
+      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: primaryColor, width: 2)),
     );
   }
 

@@ -1,10 +1,13 @@
-// lib/modules/course/view/course_creation_screen.dart (RECTIFIED - Import/Method Fix)
+// lib/modules/course/view/course_creation_screen.dart (ALTERED - New Theme)
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../viewmodel/trainer_course_viewmodel.dart';
-// 🔑 FIX 1: Import the Lesson Upload Screen (now created)
 import 'lesson_upload_screen.dart'; 
+
+// 🔑 New Theme Colors
+const Color primaryColor = Color(0xFF9ECAD6);
+const Color backgroundColor = Color(0xFFE9E3DF);
 
 class CourseCreationScreen extends ConsumerStatefulWidget {
   const CourseCreationScreen({super.key});
@@ -24,7 +27,6 @@ class _CourseCreationScreenState extends ConsumerState<CourseCreationScreen> {
   final List<String> _lessonTitles = [];
   final TextEditingController _lessonTitleController = TextEditingController();
 
-  // 🔑 FIX 2: Corrected the call to LessonUploadScreen (Line 52)
   void _submitCourse() async {
     if (_formKey.currentState!.validate()) {
       _formKey.currentState!.save();
@@ -46,7 +48,7 @@ class _CourseCreationScreenState extends ConsumerState<CourseCreationScreen> {
           const SnackBar(content: Text('Course listing created! Proceeding to video upload.')),
         );
         
-        // 🔑 FIX: Correctly call the constructor for LessonUploadScreen
+        // Correctly call the constructor for LessonUploadScreen
         Navigator.pushReplacement(
             context,
             MaterialPageRoute(builder: (_) => LessonUploadScreen(courseId: courseId)),
@@ -74,10 +76,10 @@ class _CourseCreationScreenState extends ConsumerState<CourseCreationScreen> {
     final state = ref.watch(trainerCourseViewModelProvider);
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: backgroundColor, // 🔑 NEW BACKGROUND
       appBar: AppBar(
         title: const Text('New Course Creation', style: TextStyle(color: Colors.black)),
-        backgroundColor: Colors.white,
+        backgroundColor: primaryColor, // 🔑 NEW APP BAR COLOR
         elevation: 1,
         iconTheme: const IconThemeData(color: Colors.black),
       ),
@@ -119,7 +121,7 @@ class _CourseCreationScreenState extends ConsumerState<CourseCreationScreen> {
                   const SizedBox(width: 10),
                   ElevatedButton(
                     onPressed: _addLessonTitle,
-                    style: ElevatedButton.styleFrom(backgroundColor: Colors.black, padding: const EdgeInsets.all(12)),
+                    style: ElevatedButton.styleFrom(backgroundColor: primaryColor, padding: const EdgeInsets.all(12)), // 🔑 NEW BUTTON COLOR
                     child: const Icon(Icons.add, color: Colors.white),
                   ),
                 ],
@@ -132,7 +134,7 @@ class _CourseCreationScreenState extends ConsumerState<CourseCreationScreen> {
                   int index = entry.key;
                   String title = entry.value;
                   return ListTile(
-                    leading: const Icon(Icons.videocam_outlined, color: Colors.black, size: 20),
+                    leading: Icon(Icons.videocam_outlined, color: primaryColor, size: 20), // 🔑 NEW ICON COLOR
                     title: Text('Lesson ${index + 1}: $title', style: const TextStyle(color: Colors.black)),
                     trailing: IconButton(
                       icon: const Icon(Icons.delete, color: Colors.red),
@@ -150,7 +152,7 @@ class _CourseCreationScreenState extends ConsumerState<CourseCreationScreen> {
               ElevatedButton(
                 onPressed: state.isLoading ? null : _submitCourse,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.black,
+                  backgroundColor: primaryColor, // 🔑 NEW PRIMARY BUTTON COLOR
                   padding: const EdgeInsets.symmetric(vertical: 15),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 ),
@@ -181,8 +183,11 @@ class _CourseCreationScreenState extends ConsumerState<CourseCreationScreen> {
         labelText: label,
         prefixIcon: Icon(icon, color: Colors.black),
         labelStyle: const TextStyle(color: Colors.black),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Colors.black)),
-        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Colors.black, width: 2)),
+        // 🔑 NEW INPUT FIELD STYLING
+        fillColor: Colors.white,
+        filled: true,
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: primaryColor)),
+        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: primaryColor, width: 2)),
       ),
       validator: validator ?? (value) => value == null || value.isEmpty ? 'Please enter the $label.' : null,
     );
