@@ -1,4 +1,3 @@
-// lib/modules/course/viewmodel/trainer_course_viewmodel.dart
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
@@ -39,6 +38,9 @@ class TrainerCourseState {
   final File? selectedVideoFile;
   final double uploadProgress;
 
+  // access requests targeted to this trainer
+  final List<AccessRequest> accessRequests;
+
   TrainerCourseState({
     this.isLoading = false,
     this.errorMessage,
@@ -56,6 +58,7 @@ class TrainerCourseState {
     this.totalRevenueEstimate = 0.0,
     this.selectedVideoFile,
     this.uploadProgress = 0.0,
+    this.accessRequests = const [],
   });
 
   TrainerCourseState copyWith({
@@ -75,6 +78,7 @@ class TrainerCourseState {
     int? totalEnrollment,
     double? totalRevenueEstimate,
     File? selectedVideoFile,
+    List<AccessRequest>? accessRequests,
   }) {
     return TrainerCourseState(
       isLoading: isLoading ?? this.isLoading,
@@ -91,8 +95,10 @@ class TrainerCourseState {
       selectedImageFile: selectedImageFile ?? this.selectedImageFile,
       uploadProgress: uploadProgress ?? this.uploadProgress,
       totalEnrollment: totalEnrollment ?? this.totalEnrollment,
-      totalRevenueEstimate: totalRevenueEstimate ?? this.totalRevenueEstimate,
+      totalRevenueEstimate:
+          totalRevenueEstimate ?? this.totalRevenueEstimate,
       selectedVideoFile: selectedVideoFile ?? this.selectedVideoFile,
+      accessRequests: accessRequests ?? this.accessRequests,
     );
   }
 }
@@ -113,6 +119,7 @@ class TrainerCourseViewModel extends StateNotifier<TrainerCourseState> {
       : super(TrainerCourseState()) {
     if (_uid != null) {
       listenToTrainerCourses(_uid!);
+      listenToAccessRequests(_uid!);
     }
   }
 
@@ -121,7 +128,8 @@ class TrainerCourseViewModel extends StateNotifier<TrainerCourseState> {
   // -----------------------------------------------------
 
   Future<void> pickProfileImage() async {
-    final file = await _picker.pickImage(source: ImageSource.gallery, imageQuality: 60);
+    final file =
+        await _picker.pickImage(source: ImageSource.gallery, imageQuality: 60);
     if (file != null) {
       state = state.copyWith(selectedImageFile: File(file.path));
     }
@@ -253,11 +261,8 @@ class TrainerCourseViewModel extends StateNotifier<TrainerCourseState> {
         uploadProgress: 1.0,
       );
     } catch (e) {
-      state = state.copyWith(
-        isLoading: false,
-        uploadProgress: 0,
-        errorMessage: "$e",
-      );
+      state =
+          state.copyWith(isLoading: false, uploadProgress: 0, errorMessage: "$e");
     }
   }
 
@@ -271,8 +276,10 @@ class TrainerCourseViewModel extends StateNotifier<TrainerCourseState> {
     try {
       await _courseService.deleteCourse(id);
       state = state.copyWith(
-          isLoading: false,
-          trainerCourses: state.trainerCourses.where((c) => c.id != id).toList());
+        isLoading: false,
+        trainerCourses:
+            state.trainerCourses.where((c) => c.id != id).toList(),
+      );
     } catch (e) {
       state = state.copyWith(isLoading: false, errorMessage: "$e");
     }
@@ -291,6 +298,78 @@ class TrainerCourseViewModel extends StateNotifier<TrainerCourseState> {
         totalEnrollment: total,
       );
     });
+  }
+
+  // -----------------------------------------------------
+  // LISTEN TO ACCESS REQUESTS
+  // -----------------------------------------------------
+
+  void listenToAccessRequests(String trainerUid) {
+    _courseService.getTrainerAccessRequests(trainerUid).listen((requests) {
+      state = state.copyWith(accessRequests: requests);
+    });
+  }
+
+  // -----------------------------------------------------
+  // APPROVE / DECLINE REQUEST
+  // -----------------------------------------------------
+
+  Future<void> approveRequest(AccessRequest request) async {
+    // optional loading toggle
+    state = state.copyWith(errorMessage: null);
+
+    try {
+      await _courseService.approveAccessRequest(
+        requestId: request.id,
+        courseId: request.courseId,
+        learnerUid: request.learnerUid,
+      );
+
+      // update local state immediately so UI changes
+      final updated = state.accessRequests.map((r) {
+        if (r.id == request.id) {
+          return AccessRequest(
+            id: r.id,
+            courseId: r.courseId,
+            learnerUid: r.learnerUid,
+            trainerUid: r.trainerUid,
+            status: 'Approved',
+            requestedAt: r.requestedAt,
+          );
+        }
+        return r;
+      }).toList();
+
+      state = state.copyWith(accessRequests: updated);
+    } catch (e) {
+      state = state.copyWith(errorMessage: "$e");
+    }
+  }
+
+  Future<void> declineRequest(AccessRequest request) async {
+    state = state.copyWith(errorMessage: null);
+
+    try {
+      await _courseService.declineAccessRequest(requestId: request.id);
+
+      final updated = state.accessRequests.map((r) {
+        if (r.id == request.id) {
+          return AccessRequest(
+            id: r.id,
+            courseId: r.courseId,
+            learnerUid: r.learnerUid,
+            trainerUid: r.trainerUid,
+            status: 'Declined',
+            requestedAt: r.requestedAt,
+          );
+        }
+        return r;
+      }).toList();
+
+      state = state.copyWith(accessRequests: updated);
+    } catch (e) {
+      state = state.copyWith(errorMessage: "$e");
+    }
   }
 
   // -----------------------------------------------------
@@ -322,10 +401,9 @@ class TrainerCourseViewModel extends StateNotifier<TrainerCourseState> {
   }
 
   // -----------------------------------------------------
-  // UI COMPATIBILITY WRAPPERS (VERY IMPORTANT)
+  // UI COMPATIBILITY WRAPPERS
   // -----------------------------------------------------
 
-  // COURSE CREATION SCREEN expects this ↓↓↓
   Future<String?> createCourseListing({
     required String title,
     required String description,
@@ -350,7 +428,6 @@ class TrainerCourseViewModel extends StateNotifier<TrainerCourseState> {
     return id;
   }
 
-  // COURSE EDIT SCREEN uses this ↓↓↓
   Future<void> updateCourseListing({
     required String courseId,
     required String title,
@@ -367,7 +444,6 @@ class TrainerCourseViewModel extends StateNotifier<TrainerCourseState> {
     );
   }
 
-  // LESSON UPLOAD SCREEN expects this ↓↓↓
   void resetUploadState() {
     state = state.copyWith(
       selectedVideoFile: null,
