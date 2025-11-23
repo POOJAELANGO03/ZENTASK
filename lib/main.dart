@@ -1,4 +1,4 @@
-// lib/main.dart (ALTERED - Learner Routing)
+// lib/main.dart (FINAL ROUTING IMPLEMENTATION)
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
@@ -10,11 +10,11 @@ import 'providers.dart';
 import 'modules/auth/model/user_model.dart'; 
 import 'modules/auth/viewmodel/auth_state_view_model.dart'; 
 
-// CRITICAL IMPORT: Actual Dashboard Screens
+// CRITICAL IMPORT: Dashboard Screens
 import 'modules/course/view/trainer_dashboard_screen.dart'; 
-// 🔑 NEW IMPORT: Learner Dashboard
 import 'modules/course/view/learner_dashboard_screen.dart'; 
-// import 'modules/admin/view/admin_dashboard_screen.dart'; 
+// 🔑 NEW IMPORT: Admin Dashboard
+import 'modules/admin/view/admin_dashboard_screen.dart'; 
 
 
 void main() async {
@@ -70,13 +70,12 @@ class MyApp extends ConsumerWidget {
         return const TrainerDashboardScreen();
         
       case UserRole.learner: 
-        // 🔑 FIX: Navigate to the new Learner Dashboard
         return const LearnerDashboardScreen(); 
         
       case UserRole.admin: 
-        return Scaffold(
-                appBar: AppBar(title: const Text('Admin Dashboard')),
-                body: Center(child: _buildRoleView(role, ref)));
+        // 🔑 FIX: Navigate to the actual Admin Dashboard
+        return const AdminDashboardScreen();
+        
       case UserRole.unknown:
       default:
         return LoginScreen();
