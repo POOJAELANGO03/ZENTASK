@@ -1,4 +1,4 @@
-name: zentask
+name: Coursehive
 description: "A new Flutter project."
 publish_to: "none"
 
@@ -30,6 +30,7 @@ dependencies:
   # State Management
   flutter_riverpod: ^2.4.9
   riverpod_annotation: ^2.3.3
+  flutter_launcher_icons: ^0.14.4
 
 dev_dependencies:
   flutter_test:
@@ -55,3 +56,10 @@ flutter:
   # Ensure your existing assets declaration is still correct:
   assets:
     - assets/images/
+
+flutter_icons:
+  android: true
+  ios: true
+  image_path: "assets/images/logo.png"
+  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_foreground: "assets/images/logo.png"
