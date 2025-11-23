@@ -71,12 +71,12 @@ class LoginScreen extends ConsumerWidget {
                   ),
                 ),
 
-                const SizedBox(height: 30),
+                const SizedBox(height: 25),
 
                 const Text(
                   "WELCOME TO COURSEHIVE!",
                   style: TextStyle(
-                    fontSize: 26,
+                    fontSize: 24,
                     fontWeight: FontWeight.bold,
                     color: Colors.black,
                   ),

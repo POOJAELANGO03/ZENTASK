@@ -1,5 +1,3 @@
-
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:video_player/video_player.dart';
@@ -19,36 +17,59 @@ class VideoPlayerScreen extends ConsumerStatefulWidget {
 class _VideoPlayerScreenState extends ConsumerState<VideoPlayerScreen> {
   late VideoPlayerController _controller;
   bool _isCompleted = false;
+  bool _isInitializing = true;
 
   @override
   void initState() {
     super.initState();
+    _initializeVideo();
+  }
 
-    _controller = VideoPlayerController.networkUrl(
-      Uri.parse(widget.lesson.storageUrl),
-    )..initialize().then((_) {
-        setState(() {});
-        _controller.play();
+  Future<void> _initializeVideo() async {
+    try {
+      _controller = VideoPlayerController.network(
+        widget.lesson.storageUrl,
+        videoPlayerOptions: VideoPlayerOptions(
+          mixWithOthers: true, // smoother playback
+        ),
+      );
 
-        // AUTO MARK COMPLETE WHEN VIDEO ENDS
-        _controller.addListener(() {
-          if (_controller.value.position >= _controller.value.duration &&
-              !_isCompleted) {
-            _markComplete();
-          }
-        });
+      // SAFELY initialize (reduces freeze issues)
+      await _controller.initialize();
+
+      if (!mounted) return;
+
+      setState(() => _isInitializing = false);
+
+      _controller.play();
+
+      // AUTO COMPLETE LISTENER
+      _controller.addListener(() {
+        if (_controller.value.position >= _controller.value.duration &&
+            !_isCompleted) {
+          _markComplete();
+        }
       });
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Error loading video: $e")),
+        );
+      }
+    }
   }
 
   void _markComplete() {
     if (_isCompleted) return;
-    _isCompleted = true;
 
+    _isCompleted = true;
     ref.read(progressProvider.notifier).completeLesson(widget.lesson.id);
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Lesson marked as completed!")),
-    );
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Lesson marked as completed!")),
+      );
+    }
   }
 
   @override
@@ -73,25 +94,32 @@ class _VideoPlayerScreenState extends ConsumerState<VideoPlayerScreen> {
         ],
       ),
       body: Center(
-        child: _controller.value.isInitialized
-            ? AspectRatio(
-                aspectRatio: _controller.value.aspectRatio,
-                child: VideoPlayer(_controller),
-              )
-            : const CircularProgressIndicator(color: Colors.white),
+        child: _isInitializing
+            ? const CircularProgressIndicator(color: Colors.white)
+            : _controller.value.isInitialized
+                ? AspectRatio(
+                    aspectRatio: _controller.value.aspectRatio,
+                    child: VideoPlayer(_controller),
+                  )
+                : const Text("Failed to load video",
+                    style: TextStyle(color: Colors.white)),
       ),
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: Colors.white,
-        onPressed: () {
-          setState(() {
-            _controller.value.isPlaying ? _controller.pause() : _controller.play();
-          });
-        },
-        child: Icon(
-          _controller.value.isPlaying ? Icons.pause : Icons.play_arrow,
-          color: Colors.black,
-        ),
-      ),
+      floatingActionButton: !_isInitializing
+          ? FloatingActionButton(
+              backgroundColor: Colors.white,
+              onPressed: () {
+                setState(() {
+                  _controller.value.isPlaying
+                      ? _controller.pause()
+                      : _controller.play();
+                });
+              },
+              child: Icon(
+                _controller.value.isPlaying ? Icons.pause : Icons.play_arrow,
+                color: Colors.black,
+              ),
+            )
+          : null,
     );
   }
 }

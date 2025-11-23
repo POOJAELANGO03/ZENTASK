@@ -1,4 +1,5 @@
-// lib/modules/auth/view/trainer_registration_screen.dart (ALTERED - Image Size & White BG)
+// lib/modules/auth/view/trainer_registration_screen.dart
+// FIXED: Overflow error, Clean error message, Safe structure
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,19 +10,46 @@ class TrainerRegistrationScreen extends ConsumerStatefulWidget {
   const TrainerRegistrationScreen({super.key});
 
   @override
-  ConsumerState<TrainerRegistrationScreen> createState() => _TrainerRegistrationScreenState();
+  ConsumerState<TrainerRegistrationScreen> createState() =>
+      _TrainerRegistrationScreenState();
 }
 
-class _TrainerRegistrationScreenState extends ConsumerState<TrainerRegistrationScreen> {
+class _TrainerRegistrationScreenState
+    extends ConsumerState<TrainerRegistrationScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  final UserRole _selectedRole = UserRole.trainer; 
+  final UserRole _selectedRole = UserRole.trainer;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    precacheImage(const AssetImage("assets/images/trainer.jpg"), context);
+  }
 
   void _register() {
+    if (_emailController.text.trim().isEmpty) {
+      _showError("Please enter email");
+      return;
+    }
+    if (_passwordController.text.trim().isEmpty) {
+      _showError("Please enter password");
+      return;
+    }
+    if (_passwordController.text.trim().length < 6) {
+      _showError("Password must be at least 6 characters");
+      return;
+    }
+
     ref.read(registerViewModelProvider.notifier).register(
-      _emailController.text.trim(),
-      _passwordController.text.trim(),
-      _selectedRole,
+          _emailController.text.trim(),
+          _passwordController.text.trim(),
+          _selectedRole,
+        );
+  }
+
+  void _showError(String msg) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(msg), backgroundColor: const Color.fromARGB(255, 9, 9, 9)),
     );
   }
 
@@ -32,70 +60,77 @@ class _TrainerRegistrationScreenState extends ConsumerState<TrainerRegistrationS
 
     ref.listen<RegisterState>(registerViewModelProvider, (previous, current) {
       if (current.errorMessage != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(current.errorMessage!),
-            backgroundColor: theme.colorScheme.error,
-          ),
-        );
+        _showError("Registration failed: ${current.errorMessage}");
       } else if (current.isRegistered) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Trainer account created! Please login.')),
+          const SnackBar(
+              content: Text('Trainer account created! Please login.')),
         );
-        Navigator.of(context).popUntil((route) => route.isFirst); 
+        Navigator.of(context).popUntil((route) => route.isFirst);
       }
     });
 
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
         title: const Text('Register as TRAINER'),
         backgroundColor: Colors.white,
         elevation: 0,
-        foregroundColor: Colors.black, // Ensure title is black
+        foregroundColor: Colors.black,
       ),
-      backgroundColor: Colors.white, // 🔑 PURE WHITE BACKGROUND
-      body: Center(
+
+      body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(32.0),
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // 🔑 IMAGE HEIGHT INCREASED
               Center(
-                child: Image.asset(
-                  'assets/images/trainer.jpg', 
-                  height: 290, // Increased height
-                ),
+                child: Image.asset('assets/images/trainer.jpg', height: 290),
               ),
               const SizedBox(height: 82),
 
               Text(
                 'Join as a Trainer',
-                style: theme.textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold, color: Colors.black),
+                style: theme.textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black,
+                ),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 24),
-              
+
               TextFormField(
                 controller: _emailController,
-                decoration: const InputDecoration(labelText: 'Email Address', prefixIcon: Icon(Icons.email_outlined, color: Colors.black)),
-                keyboardType: TextInputType.emailAddress,
+                decoration: const InputDecoration(
+                  labelText: 'Email Address',
+                  prefixIcon: Icon(Icons.email_outlined, color: Colors.black),
+                ),
               ),
               const SizedBox(height: 16),
+
               TextFormField(
                 controller: _passwordController,
-                decoration: const InputDecoration(labelText: 'Password (min 6 chars)', prefixIcon: Icon(Icons.lock_outline, color: Colors.black)),
+                decoration: const InputDecoration(
+                  labelText: 'Password (min 6 chars)',
+                  prefixIcon: Icon(Icons.lock_outline, color: Colors.black),
+                ),
                 obscureText: true,
               ),
               const SizedBox(height: 32),
-              
+
               ElevatedButton(
                 onPressed: state.isLoading ? null : _register,
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.black), // PURE BLACK BUTTON
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.black),
                 child: state.isLoading
-                    ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                    : const Text('Register Trainer', style: TextStyle(fontSize: 18, color: Colors.white)),
+                    ? const SizedBox(
+                        width: 20, height: 20,
+                        child: CircularProgressIndicator(
+                          color: Colors.white, strokeWidth: 2))
+                    : const Text(
+                        'Register Trainer',
+                        style: TextStyle(fontSize: 18, color: Colors.white),
+                      ),
               ),
             ],
           ),
