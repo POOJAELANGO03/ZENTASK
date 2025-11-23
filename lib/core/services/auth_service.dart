@@ -1,8 +1,8 @@
-// lib/core/services/auth_service.dart (RECTIFIED - No changes needed here, only dependency required)
+// lib/core/services/auth_service.dart (ALTERED - Adding updateProfileDetails)
 
 import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:google_sign_in/google_sign_in.dart'; // This import needs the pubspec fix!
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/services.dart';
 
@@ -42,6 +42,29 @@ class AuthService {
         'createdAt': FieldValue.serverTimestamp(),
       });
     }
+  }
+
+  // 🔑 NEW IMPLEMENTATION: Update Profile Details in Firestore
+  Future<void> updateProfileDetails({
+    required String uid,
+    required String displayName,
+    required String specialization,
+    required String profileDetails,
+    required String phoneNumber,
+    required String address,
+    required String degree,
+    String? profileImageUrl,
+  }) async {
+    final userDoc = _firestore.collection('users').doc(uid);
+    await userDoc.update({
+      'displayName': displayName,
+      'specialization': specialization,
+      'profileDetails': profileDetails,
+      'phoneNumber': phoneNumber,
+      'address': address,
+      'degree': degree,
+      if (profileImageUrl != null) 'profileImageUrl': profileImageUrl,
+    });
   }
 
   // 1. Email Sign In

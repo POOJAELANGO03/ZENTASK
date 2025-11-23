@@ -122,7 +122,7 @@ class _CourseCreationScreenState extends ConsumerState<CourseCreationScreen> {
                   ElevatedButton(
                     onPressed: _addLessonTitle,
                     style: ElevatedButton.styleFrom(backgroundColor: primaryColor, padding: const EdgeInsets.all(12)), // 🔑 NEW BUTTON COLOR
-                    child: const Icon(Icons.add, color: Colors.white),
+                    child: const Icon(Icons.add, color: Color.fromARGB(255, 10, 10, 10)),
                   ),
                 ],
               ),
@@ -137,7 +137,7 @@ class _CourseCreationScreenState extends ConsumerState<CourseCreationScreen> {
                     leading: Icon(Icons.videocam_outlined, color: primaryColor, size: 20), // 🔑 NEW ICON COLOR
                     title: Text('Lesson ${index + 1}: $title', style: const TextStyle(color: Colors.black)),
                     trailing: IconButton(
-                      icon: const Icon(Icons.delete, color: Colors.red),
+                      icon: const Icon(Icons.delete, color: Color.fromARGB(255, 11, 11, 11)),
                       onPressed: () {
                         setState(() {
                           _lessonTitles.removeAt(index);
@@ -158,7 +158,7 @@ class _CourseCreationScreenState extends ConsumerState<CourseCreationScreen> {
                 ),
                 child: state.isLoading
                     ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                    : const Text('Create & Proceed to Upload', style: TextStyle(fontSize: 16, color: Colors.white)),
+                    : const Text('Create & Proceed to Upload', style: TextStyle(fontSize: 16, color: Color.fromARGB(255, 8, 8, 8))),
               ),
             ],
           ),
