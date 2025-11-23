@@ -41,7 +41,7 @@ class _LearnerDashboardScreenState
     _screens = const [
       LearnerCourseExplorerView(),
       LearnerEnrolledCoursesView(),
-      LearnerProfileScreen(), // NEW PROFILE TAB
+      LearnerProfileScreen(),
     ];
   }
 
@@ -61,8 +61,8 @@ class _LearnerDashboardScreenState
         currentIndex: _currentIndex,
         onTap: (i) => setState(() => _currentIndex = i),
         backgroundColor: primaryColor,
-        selectedItemColor: const Color.fromARGB(255, 9, 9, 9),
-        unselectedItemColor: const Color.fromARGB(255, 85, 84, 84),
+        selectedItemColor: Colors.black,
+        unselectedItemColor: Colors.grey.shade700,
         type: BottomNavigationBarType.fixed,
         elevation: 5,
         items: const [
@@ -129,6 +129,10 @@ class LearnerCourseExplorerView extends ConsumerWidget {
               onPressed: () => showModalBottomSheet(
                 context: context,
                 isScrollControlled: true,
+                backgroundColor: Colors.white,
+                shape: const RoundedRectangleBorder(
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                ),
                 builder: (_) => const FilterModalContent(),
               ),
             ),
@@ -158,6 +162,7 @@ class LearnerCourseExplorerView extends ConsumerWidget {
                   ),
                   const SizedBox(height: 20),
 
+                  // SEARCH BAR
                   TextField(
                     controller: searchController,
                     decoration: InputDecoration(
@@ -239,7 +244,7 @@ class LearnerCourseExplorerView extends ConsumerWidget {
 }
 
 // ===============================================================
-// 3. ENROLLED COURSES VIEW (FINAL PROGRESS WORKING)
+// 3. ENROLLED COURSES VIEW
 // ===============================================================
 
 class LearnerEnrolledCoursesView extends ConsumerWidget {
@@ -314,7 +319,7 @@ class LearnerEnrolledCoursesView extends ConsumerWidget {
 }
 
 // ===============================================================
-// 4. FILTER MODAL
+// 4. UPDATED FILTER MODAL (FINAL UI)
 // ===============================================================
 
 class FilterModalContent extends ConsumerStatefulWidget {
@@ -363,8 +368,13 @@ class _FilterModalContentState extends ConsumerState<FilterModalContent> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 350,
+      height: 370,
       padding: const EdgeInsets.all(20),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius:
+            BorderRadius.vertical(top: Radius.circular(20)),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -372,29 +382,34 @@ class _FilterModalContentState extends ConsumerState<FilterModalContent> {
             "Filter Courses",
             style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 20),
 
           // PRICE SLIDER
-          const Text("Max Price"),
+          const Text("Max Price", style: TextStyle(fontWeight: FontWeight.bold)),
           Slider(
             value: _currentMaxPrice,
             min: 0,
             max: _maxPriceLimit,
             divisions: 200,
+            activeColor: Colors.black,
             onChanged: (v) => setState(() => _currentMaxPrice = v),
           ),
 
+          const SizedBox(height: 10),
+
           // RATING SLIDER
-          const Text("Minimum Rating"),
+          const Text("Minimum Rating",
+              style: TextStyle(fontWeight: FontWeight.bold)),
           Slider(
             value: _currentMinRating,
             min: 0,
             max: _maxRatingLimit,
             divisions: 5,
+            activeColor: Colors.black,
             onChanged: (v) => setState(() => _currentMinRating = v),
           ),
 
-          const SizedBox(height: 20),
+          const SizedBox(height: 30),
 
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -402,16 +417,18 @@ class _FilterModalContentState extends ConsumerState<FilterModalContent> {
               TextButton(
                 onPressed: _resetFilters,
                 child: const Text("Reset",
-                    style: TextStyle(color: Colors.red)),
+                    style: TextStyle(color: Color.fromARGB(255, 10, 10, 10), fontSize: 16)),
               ),
               ElevatedButton(
                 onPressed: _applyFilters,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.black,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 25, vertical: 12),
                 ),
                 child: const Text(
                   "Apply Filters",
-                  style: TextStyle(color: Colors.white),
+                  style: TextStyle(color: Colors.white, fontSize: 16),
                 ),
               )
             ],
