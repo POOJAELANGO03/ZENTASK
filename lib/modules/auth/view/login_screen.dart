@@ -1,4 +1,4 @@
-// lib/modules/auth/view/login_screen.dart (UPDATED — Added profile GIF)
+// lib/modules/auth/view/login_screen.dart (UPDATED — Added Validation + profile GIF)
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -14,13 +14,30 @@ class LoginScreen extends ConsumerWidget {
   final StateProvider<bool> isPasswordVisibleProvider =
       StateProvider<bool>((ref) => false);
 
+  // ⭐ UPDATED — Added validation before login ⭐
   void _login(WidgetRef ref) {
     FocusScope.of(ref.context).unfocus();
 
-    ref.read(loginViewModelProvider.notifier).signIn(
-          _emailController.text.trim(),
-          _passwordController.text.trim(),
-        );
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
+
+    // ---------- BASIC VALIDATION ----------
+    if (email.isEmpty) {
+      ScaffoldMessenger.of(ref.context).showSnackBar(
+        const SnackBar(content: Text("Please enter your email")),
+      );
+      return;
+    }
+
+    if (password.isEmpty) {
+      ScaffoldMessenger.of(ref.context).showSnackBar(
+        const SnackBar(content: Text("Please enter your password")),
+      );
+      return;
+    }
+    // --------------------------------------
+
+    ref.read(loginViewModelProvider.notifier).signIn(email, password);
   }
 
   void _signInWithGoogle(WidgetRef ref) {
@@ -44,10 +61,9 @@ class LoginScreen extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-
                 SizedBox(height: MediaQuery.of(context).size.height * 0.05),
 
-                // ⭐ ADDED PROFILE GIF HERE ⭐
+                // ⭐ PROFILE GIF ⭐
                 Center(
                   child: Image.asset(
                     'assets/images/profile_8121295.gif',
@@ -71,7 +87,6 @@ class LoginScreen extends ConsumerWidget {
                 _buildTextField(
                   controller: _emailController,
                   hintText: 'Enter your email',
-                  obscureText: false,
                 ),
 
                 const SizedBox(height: 16),
@@ -108,6 +123,7 @@ class LoginScreen extends ConsumerWidget {
 
                 const SizedBox(height: 20),
 
+                // 🔥 Firebase error only if validation passed
                 if (state.errorMessage != null)
                   Padding(
                     padding: const EdgeInsets.only(bottom: 16.0),
