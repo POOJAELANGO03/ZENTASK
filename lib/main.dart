@@ -1,19 +1,13 @@
-// lib/main.dart (FINAL ROUTING IMPLEMENTATION)
-
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
 import 'modules/auth/view/login_screen.dart';
 import 'firebase_options.dart';
 import 'providers.dart';
 import 'modules/auth/model/user_model.dart'; 
 import 'modules/auth/viewmodel/auth_state_view_model.dart'; 
-
-// CRITICAL IMPORT: Dashboard Screens
 import 'modules/course/view/trainer_dashboard_screen.dart'; 
 import 'modules/course/view/learner_dashboard_screen.dart'; 
-// 🔑 NEW IMPORT: Admin Dashboard
 import 'modules/admin/view/admin_dashboard_screen.dart'; 
 
 

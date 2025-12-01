@@ -1,11 +1,8 @@
-// lib/modules/course/view/course_creation_screen.dart (ALTERED - New Theme)
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../viewmodel/trainer_course_viewmodel.dart';
 import 'lesson_upload_screen.dart'; 
 
-// 🔑 New Theme Colors
 const Color primaryColor = Color(0xFF9ECAD6);
 const Color backgroundColor = Color(0xFFE9E3DF);
 
